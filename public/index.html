@@ -861,7 +861,7 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 
 <div class="shell" id="shell">
   <aside class="side" id="side">
-    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v 3ccae5e · 01.11.2026 16:27</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
+    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v 07fa773 · 01.11.2026 16:34</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
     <button class="newchat" id="newChat">＋ <span data-t="newChat">New chat</span></button>
     <nav class="nav" id="nav"></nav>
     <div class="nav"><div class="grp" data-t="recent">Recent chats</div></div>
@@ -985,7 +985,7 @@ function faqText(){ const out=[]; for(const lg of ["en","de"]) for(const f of DO
 /* ---------------- product text for Claude ---------------- */
 function prodText(p, lg){
   const x = p[lg] || p.en;
-  let s = `### ${p.t} [${p.h}]\n${isArch(p)?`DISCONTINUED MODEL, model year ${p.my}, from the ${p.my} catalog (not on sale today; no price or stock).\n`:""}Type: ${p.cat}${p.styles&&p.styles.length>1?` | Also listed under (bombtrack.com): ${p.styles.slice(1).join(", ")}`:""} | Kind: ${p.k}${p.fam?` | Family: ${p.fam}`:""}\n${SET.price?`Price: ${eur(priceOf(p))} | `:""}Sizes: ${p.v.map(v=>`${v[0]}${SET.stock?(v[2]?" available":" sold out"):""}`).join(", ")}\nURL: ${"https://bombtrack.com/"+(lg==="de"?"de/":"")+"products/"+p.h}\n`;
+  let s = `### ${p.t} [${p.h}]\n${isArch(p)?`DISCONTINUED MODEL, model year ${p.my}, from the ${p.my} catalog (not on sale today; no price or stock).\n`:`Model year: ${CUR_Y} (current range on bombtrack.com)\n`}Type: ${p.cat}${p.styles&&p.styles.length>1?` | Also listed under (bombtrack.com): ${p.styles.slice(1).join(", ")}`:""} | Kind: ${p.k}${p.fam?` | Family: ${p.fam}`:""}\n${SET.price?`Price: ${eur(priceOf(p))} | `:""}Sizes: ${p.v.map(v=>`${v[0]}${SET.stock?(v[2]?" available":" sold out"):""}`).join(", ")}\nURL: ${"https://bombtrack.com/"+(lg==="de"?"de/":"")+"products/"+p.h}\n`;
   if (x.d) s += `Description: ${x.d.slice(0,900)}\n`;
   for (const grp of [x.s, x.x]) for (const sec in grp||{}) s += `${sec}: ` + Object.entries(grp[sec]).map(([k,v])=>`${k}: ${v}`).join("; ") + "\n";
   if ((x.n||[]).length) s += "Notes: " + x.n.join(" ") + "\n";
@@ -1519,7 +1519,7 @@ function rules(){
 
 SCOPE: Answer only questions about Bombtrack products (bikes, framesets, spare parts, accessories, clothing), their specs, compatibility, sizing, geometry, and general cycling knowledge needed to sell or service them (riding styles, standards, fitting). For anything else (general chat, coding, writing unrelated texts, other brands' products unless comparing standards) reply in one polite sentence that you only help with Bombtrack products, and set status offtopic.
 
-${!SET.price||!SET.stock?`HIDDEN INFO: ${!SET.price?"Do not mention prices or budgets in euros; if asked about price, say prices are available from the dealer or on bombtrack.com. ":""}${!SET.stock?"Do not mention stock or availability; if asked, say to check with the dealer or on bombtrack.com. ":""}\n\n`:""}TRUTH: Use ONLY the Bombtrack data you get from the tools and the team answers. Never guess a spec, price, compatibility or part number. Quote values exactly with units. Mention model year only if the data does.
+${!SET.price||!SET.stock?`HIDDEN INFO: ${!SET.price?"Do not mention prices or budgets in euros; if asked about price, say prices are available from the dealer or on bombtrack.com. ":""}${!SET.stock?"Do not mention stock or availability; if asked, say to check with the dealer or on bombtrack.com. ":""}\n\n`:""}TRUTH: Use ONLY the Bombtrack data you get from the tools and the team answers. Never guess a spec, price, compatibility or part number. Quote values exactly with units. All products in the CATALOG (not kind "archive") are the current range, model year ${CUR_Y}, as listed on bombtrack.com; treat their specs as ${CUR_Y} figures and never say the year is unclear. For archive products, name the year they are from.
 - If something simply doesn't exist in the range (e.g. e-bikes, a model or size Bombtrack doesn't make), say so in one short sentence and stop. No list of what exists instead, no tips, no suggestion to contact anyone, no speculation about plans. This counts as answered (status answered).
 - Only when the question is about an existing product and the specific detail is missing from the data, say that briefly and set status unanswered (or partial).
 - Never describe categories or products in your own loose words (for example never call bikes "without drivetrain"); use the terms from the data.
@@ -1537,7 +1537,7 @@ listing the product handles your answer is based on (empty if none). Never menti
 FAQ (from bombtrack.com; the German FAQ is incomplete on the site, use the English entries when needed):
 ${faqText()}
 
-CATALOG (${COUNTS} in total; complete bikes and framesets listed here, search for parts and clothing):
+CATALOG = CURRENT RANGE, MODEL YEAR ${CUR_Y} (bombtrack.com, data as of ${KB.fetched}; ${COUNTS} in total; complete bikes and framesets listed here, search for parts and clothing):
 ${catalog()}
 
 EARLIER MODEL YEARS (kind "archive", from old catalogs; use get_products with these handles for questions about older bikes or what changed; compare them with today's model of the same name and say clearly which year each fact is from):

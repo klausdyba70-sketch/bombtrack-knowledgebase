@@ -7,6 +7,17 @@
    Keep the shapes in sync with how the app calls them; nothing else in the app needs to change. */
 (function () {
   "use strict";
+  /* Show script errors in a small bar so problems on the live site are visible and can be reported. */
+  const showErr = (msg) => {
+    const add = () => {
+      let el = document.getElementById("pbErr");
+      if (!el) { el = document.createElement("div"); el.id = "pbErr"; el.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:9999;max-width:min(560px,calc(100vw - 16px));background:#b3261e;color:#fff;font:12px/1.4 system-ui,sans-serif;padding:6px 10px;border-radius:8px;opacity:.92;cursor:pointer"; el.title = "Click to hide"; el.onclick = () => el.remove(); document.body.appendChild(el); }
+      el.textContent = "Fehler: " + String(msg).slice(0, 300);
+    };
+    document.body ? add() : addEventListener("DOMContentLoaded", add);
+  };
+  addEventListener("error", e => showErr(e.message || e.error));
+  addEventListener("unhandledrejection", e => { const r = e.reason || {}; if (r.code !== "cancelled") showErr(r.message || r.code || r); });
   const api = async (path, body) => {
     const r = await fetch(path, body === undefined ? { credentials: "same-origin" } : {
       method: "POST", credentials: "same-origin",

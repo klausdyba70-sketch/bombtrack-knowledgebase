@@ -7,6 +7,17 @@
    Keep the shapes in sync with how the app calls them; nothing else in the app needs to change. */
 (function () {
   "use strict";
+  /* Show script errors in a small bar so problems on the live site are visible and can be reported. */
+  const showErr = (msg) => {
+    const add = () => {
+      let el = document.getElementById("pbErr");
+      if (!el) { el = document.createElement("div"); el.id = "pbErr"; el.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:9999;max-width:min(560px,calc(100vw - 16px));background:#b3261e;color:#fff;font:12px/1.4 system-ui,sans-serif;padding:6px 10px;border-radius:8px;opacity:.92;cursor:pointer"; el.title = "Click to hide"; el.onclick = () => el.remove(); document.body.appendChild(el); }
+      el.textContent = "Fehler: " + String(msg).slice(0, 300);
+    };
+    document.body ? add() : addEventListener("DOMContentLoaded", add);
+  };
+  addEventListener("error", e => showErr(e.message || e.error));
+  addEventListener("unhandledrejection", e => { const r = e.reason || {}; if (r.code !== "cancelled") showErr(r.message || r.code || r); });
   const api = async (path, body) => {
     const r = await fetch(path, body === undefined ? { credentials: "same-origin" } : {
       method: "POST", credentials: "same-origin",
@@ -602,6 +613,7 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 .tier.t-quick{background:var(--lime-soft)}.tier.t-default{background:var(--lime);color:var(--lime-ink)}.tier.t-complex{background:var(--ink);color:var(--page)}
 .share{display:inline-block;width:70px;height:8px;border-radius:99px;background:var(--lime-soft);overflow:hidden;vertical-align:middle}.share i{display:block;height:100%;background:var(--lime)}
 .linkbtn{border:0;background:none;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 2px}.linkbtn:hover{color:var(--ink)}
+.ver{margin-top:auto;padding:14px 16px 6px;font-size:10px;line-height:1.3;color:var(--muted);opacity:.65;font-family:var(--mono);user-select:all}
 .pkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-top:12px}
 .pkbar #ckinds{margin-top:0}
 .chip .cnt{background:var(--lime);color:var(--lime-ink);border-radius:999px;padding:0 6px;font-size:11px;font-weight:700}
@@ -815,7 +827,7 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
     <nav class="nav" id="nav"></nav>
     <div class="nav"><div class="grp" data-t="recent">Recent chats</div></div>
     <div class="hist" id="hist"></div>
-
+    <div class="ver" id="appVer">v 3b89b1c · 01.11.2026 16:18</div>
   </aside>
   <div class="scrim" id="scrim"></div>
   <main class="main">

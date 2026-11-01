@@ -33,14 +33,24 @@ function needProfile(v, after) {
   $("#lf").onsubmit = e => { e.preventDefault(); const n = $("#lf_n").value.trim(); if (!n) return; LEARN = blankLearner(n.slice(0, 60), $("#lf_r").value); saveLearner(); after ? after() : render(); };
   return true;
 }
+const AIC = {
+  quiz: '<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4h0A2.5 2.5 0 0 1 4 13.5z"/><path d="M9.8 7.8a2.3 2.3 0 0 1 4.4 1c0 1.5-2.2 1.8-2.2 3.2"/><circle cx="12" cy="13.9" r=".2"/></svg>',
+  cards: '<svg viewBox="0 0 24 24"><rect x="7" y="4" width="13" height="16" rx="2.2"/><path d="M4 7.5v10A2.5 2.5 0 0 0 6.5 20"/><path d="M10.5 9.5h6M10.5 13h4"/></svg>',
+  practice: '<svg viewBox="0 0 24 24"><path d="M3.5 6A2 2 0 0 1 5.5 4h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-3.5 3v-3a2 2 0 0 1-2-2z"/><path d="M15.5 8.5h3a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2v3L15 17h-3.5a2 2 0 0 1-1.8-1.2"/></svg>',
+  star: '<svg viewBox="0 0 24 24"><path d="m12 4 2.3 4.8 5.2.7-3.8 3.6.9 5.2L12 15.8l-4.6 2.5.9-5.2-3.8-3.6 5.2-.7z"/></svg>',
+  cert: '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="m9 13.5-1.5 6.5L12 18l4.5 2-1.5-6.5"/></svg>',
+  lock: '<svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+};
+const medal = (ic, p) => { const r = 26, c = 2 * Math.PI * r, f = Math.min(1, p); return `<span class="medal ${f >= 1 ? "on" : ""}"><svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" class="trk"/><circle cx="32" cy="32" r="${r}" class="val" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}"/></svg><span class="ico">${AIC[ic]}</span></span>`; };
 function badges(l) {
   l = l || LEARN || {};
   const q = (l.quiz || []).filter(x => x.n >= 8 && x.c / x.n >= 0.8).length;
   const stylesDone = CATS.filter(c => l.lessons?.[c]).length;
   return [
-    { k: "cards", ic: "▭", t: tx("Flashcards", "Karteikarten"), d: tx("Know half of all bikes by heart", "Die Hälfte aller Bikes sicher kennen"), p: Math.min(1, (l.known || []).length / Math.max(1, Math.ceil(BIKES.length / 2))) },
-    { k: "quiz", ic: "?", t: tx("Quiz pro", "Quiz-Profi"), d: tx("3 quizzes with 80% or more", "3 Quiz mit mindestens 80 %"), p: Math.min(1, q / 3) },
-    { k: "sales", ic: "☺", t: tx("Sales", "Verkauf"), d: tx("Score 7+ in counter practice, objections or pitch", "7+ Punkte im Verkaufstraining, bei Einwänden oder im Pitch"), p: Math.max(l.practice?.best || 0, l.pitch?.best || 0, l.obj?.best || 0) >= 7 ? 1 : Math.max(l.practice?.best || 0, l.pitch?.best || 0, l.obj?.best || 0) / 7 }
+    { k: "cards", ic: "cards", t: tx("Flashcards", "Karteikarten"), d: tx("Know half of all bikes by heart", "Die Hälfte aller Bikes sicher kennen"), p: Math.min(1, (l.known || []).length / Math.max(1, Math.ceil(BIKES.length / 2))) },
+    { k: "quiz", ic: "star", t: tx("Quiz pro", "Quiz-Profi"), d: tx("3 quizzes with 80% or more", "3 Quiz mit mindestens 80 %"), p: Math.min(1, q / 3) },
+    { k: "sales", ic: "practice", t: tx("Sales", "Verkauf"), d: tx("Score 7+ in counter practice, objections or pitch", "7+ Punkte im Verkaufstraining, bei Einwänden oder im Pitch"), p: Math.max(l.practice?.best || 0, l.pitch?.best || 0, l.obj?.best || 0) >= 7 ? 1 : Math.max(l.practice?.best || 0, l.pitch?.best || 0, l.obj?.best || 0) / 7 }
   ];
 }
 const quizPct = l => { const q = (l.quiz || []); const c = q.reduce((a, x) => a + x.c, 0), n = q.reduce((a, x) => a + x.n, 0); return n ? Math.round(c / n * 100) : null; };
@@ -52,9 +62,9 @@ function viewAcademy(v) {
   const B = badges(), done = B.filter(b => b.p >= 1).length, cert = done === B.length;
   const roleName = (ROLES().find(r => r[0] === LEARN.role) || [0, ""])[1];
   const mods = [
-    ["quiz", "?", tx("Quiz", "Quiz"), tx("10 questions per round, built from the real product data. Choose complete bikes, framesets, spare parts, accessories and apparel, or a riding style. You see right away why an answer is right.", "10 Fragen pro Runde, gebaut aus den echten Produktdaten. Wähle Komplettbikes, Rahmensets, Ersatzteile, Zubehör und Bekleidung oder einen Fahrstil. Du siehst sofort, warum eine Antwort stimmt."), (LEARN.quiz.length ? quizPct(LEARN) + "%" : "")],
-    ["cards", "▭", tx("Flashcards", "Karteikarten"), tx("Learn every bike by sight: photo on the front, the key facts on the back. Cards you don't know yet come back more often until they stick.", "Lerne jedes Bike auf einen Blick: vorne das Foto, hinten die wichtigsten Fakten. Karten, die du noch nicht kannst, kommen öfter, bis sie sitzen."), (LEARN.known.length ? LEARN.known.length + "/" + BIKES.length : "")],
-    ["practice", "☺", t("practice"), tx("Practise real counter situations: Claude plays a customer, you advise. Then you get a score and feedback based on the real specs. Also: handling objections and a 30-second pitch.", "Übe echte Situationen an der Theke: Claude spielt die Kundschaft, du berätst. Danach gibt es Punkte und Feedback auf Basis der echten Specs. Dazu: Einwände behandeln und ein 30-Sekunden-Pitch."), (Math.max(LEARN.practice.best, LEARN.pitch.best, LEARN.obj.best) ? Math.max(LEARN.practice.best, LEARN.pitch.best, LEARN.obj.best) + "/10" : "")]
+    ["quiz", tx("Quiz", "Quiz"), tx("10 questions from the real product data, with the reason for every answer.", "10 Fragen aus den echten Produktdaten, mit Erklärung zu jeder Antwort."), quizPct(LEARN) != null ? quizPct(LEARN) + " %" : ""],
+    ["cards", tx("Flashcards", "Karteikarten"), tx("Photo on the front, key facts on the back. Learn every bike by sight.", "Foto vorne, Fakten hinten. Lerne jedes Bike auf einen Blick."), LEARN.known.length ? LEARN.known.length + "/" + BIKES.length : ""],
+    ["practice", t("practice"), tx("Claude plays the customer, you advise and get feedback.", "Claude spielt die Kundschaft, du berätst und bekommst Feedback."), Math.max(LEARN.practice?.best || 0, LEARN.pitch?.best || 0, LEARN.obj?.best || 0) ? tx("best ", "bestes ") + Math.max(LEARN.practice?.best || 0, LEARN.pitch?.best || 0, LEARN.obj?.best || 0) + "/10" : ""]
   ];
 
   let team = "";
@@ -63,11 +73,14 @@ function viewAcademy(v) {
     team = `<div class="vhead" style="margin-top:10px"><h1 style="font-size:24px">${tx("Team progress", "Team-Fortschritt")} · ${LEARNERS.length}</h1></div>
       <div class="card ctable"><table style="table-layout:auto"><thead><tr><th>${tx("Name", "Name")}</th><th>XP</th><th>${tx("Flashcards", "Karteikarten")}</th><th>Quiz</th><th>${tx("Sales", "Verkauf")}</th><th>${tx("Badges", "Abzeichen")}</th><th>${tx("Last active", "Zuletzt")}</th></tr></thead><tbody>${rows || `<tr><td colspan="7" class="empty">–</td></tr>`}</tbody></table></div>`;
   }
-  v.innerHTML = `<div class="wrap"><div class="vhead"><h1>${tx("Hi", "Hallo")} ${esc(LEARN.name.split(" ")[0])}</h1><p>${esc(roleName)} · ${LEARN.xp || 0} XP · ${done}/${B.length} ${tx("badges", "Abzeichen")} <button class="back" id="lfEdit" style="display:inline;margin-left:8px">${tx("Change name", "Name ändern")}</button></p>
-      <p>${tx("The Academy is your training: three ways to practise what's in the knowledge base. Everything you do here earns XP and counts towards your badges, and the team can see your progress. Get all three badges for the Bombtrack Certified certificate.", "Die Academy ist dein Training: drei Arten, das Wissen aus der App zu üben. Alles, was du hier machst, bringt XP und zählt für deine Abzeichen, und das Team sieht deinen Fortschritt. Mit allen drei Abzeichen gibt es das Zertifikat Bombtrack Certified.")}</p></div>
+  v.innerHTML = `<div class="wrap"><div class="vhead"><h1>${tx("Hi", "Hallo")} ${esc(LEARN.name.split(" ")[0])}</h1><p>${roleName ? esc(roleName) + " · " : ""}${LEARN.xp || 0} XP · ${done}/${B.length} ${tx("badges", "Abzeichen")} <button class="back" id="lfEdit" style="display:inline;margin-left:8px">${tx("Change name", "Name ändern")}</button></p>
+      <p>${tx("Train with the real product data. Everything earns XP and counts towards your badges.", "Trainiere mit den echten Produktdaten. Alles bringt XP und zählt für deine Abzeichen.")}</p></div>
     ${cert ? `<div class="card certi"><span class="note">BOMBTRACK · KNOWLEDGE &amp; ADVICE</span><b>Bombtrack Certified</b><span>${esc(LEARN.name)}</span><span class="note">${esc(roleName)} · ${new Date().toLocaleDateString(lang === "de" ? "de-DE" : "en-GB")}</span></div>` : ""}
-    <div class="badges">${B.map(b => `<div class="card bdg ${b.p >= 1 ? "on" : ""}"><span class="ic">${b.ic}</span><b>${esc(b.t)}</b><span class="note">${esc(b.d)}</span><div class="bar2"><i style="width:${Math.round(Math.min(1, b.p) * 100)}%"></i></div></div>`).join("")}</div>
-    <div class="hub amods" id="amods">${mods.map(([k, ic, ti, d, st]) => `<button data-v="${k}"><span class="ic">${ic}</span><b>${esc(ti)} ${st ? `<span class="pill" style="margin-left:6px">${esc(st)}</span>` : ""}</b><span class="d">${esc(d)}</span></button>`).join("")}</div>
+    <h3 class="setgrp">${tx("Start training", "Training starten")}</h3>
+    <div class="amods2" id="amods">${mods.map(([k, ti, d, st]) => `<button data-v="${k}"><span class="mic">${AIC[k]}</span><span class="mtx"><b>${esc(ti)}${st ? ` <span class="pill">${esc(st)}</span>` : ""}</b><span class="d">${esc(d)}</span></span><span class="go">${tx("Start", "Starten")} ${AIC.arrow}</span></button>`).join("")}</div>
+    <h3 class="setgrp">${tx("Your badges", "Deine Abzeichen")} · ${done}/${B.length}</h3>
+    <div class="badges2">${B.map(b => `<div class="bdg2 ${b.p >= 1 ? "on" : ""}">${medal(b.ic, b.p)}<b>${esc(b.t)}</b><span class="note">${esc(b.d)}</span><span class="pct">${b.p >= 1 ? tx("Earned", "Erreicht") : Math.round(Math.min(1, b.p) * 100) + " %"}</span></div>`).join("")}
+      <div class="bdg2 cert ${cert ? "on" : ""}">${medal("cert", done / B.length)}<b>Bombtrack Certified</b><span class="note">${tx("All three badges", "Alle drei Abzeichen")}</span><span class="pct">${cert ? tx("Earned", "Erreicht") : done + "/" + B.length}</span></div></div>
     ${team}</div>`;
   $("#amods").onclick = e => { const b = e.target.closest("[data-v]"); if (b) { if (b.dataset.v === "quiz" && qz && qz.i >= qz.qs.length) qz = null; go(b.dataset.v); } };
   $("#lfEdit").onclick = () => { const n = LEARN.name; LEARN.name = ""; if (!needProfile(v, () => render())) LEARN.name = n; const inp = $("#lf_n"); if (inp) { inp.value = n; } };
@@ -282,8 +295,8 @@ function viewQuiz(v) {
   v.style.padding = "";
   if (needProfile(v)) return;
   if (!qz) {
-    v.innerHTML = `<div class="wrap"><div class="vhead"><h1>${tx("Quiz", "Quiz")}</h1><p>${tx("10 multiple choice questions, built fresh every round from Bombtrack's real product data. Pick a category, answer, and you see right away why an answer is right. Each correct answer gives 10 XP; 3 quizzes with 80 % or more earn the Quiz pro badge.", "10 Multiple-Choice-Fragen, jede Runde neu aus Bombtracks echten Produktdaten gebaut. Wähle eine Kategorie, antworte, und du siehst sofort, warum eine Antwort stimmt. Jede richtige Antwort bringt 10 XP, 3 Quiz mit mindestens 80 % ergeben das Abzeichen Quiz-Profi.")}</p></div>
-      <h3 class="setgrp">${tx("Product category", "Produktkategorie")}</h3>
+    v.innerHTML = `<div class="wrap"><div class="vhead"><div class="ttl"><span class="mic">${AIC.quiz}</span><h1>${tx("Quiz", "Quiz")}</h1></div><p>${tx("10 questions per round from the real product data. Pick what you want to be quizzed on and the round starts right away.", "10 Fragen pro Runde aus den echten Produktdaten. Wähle, worüber du gefragt werden willst, und die Runde startet sofort.")}</p></div>
+      <h3 class="setgrp">${tx("Start a round: product category", "Runde starten: Produktkategorie")}</h3>
       <div class="hub qhub" id="qk">${QKINDS().map(([k, l, d]) => `<button data-q="${k}"><b>${esc(l)}</b><span class="d">${esc(d)}</span></button>`).join("")}</div>
       <h3 class="setgrp">${tx("Or by riding style", "Oder nach Fahrstil")}</h3>
       <div class="chips" id="qs">${CATS.map(c => `<button class="chip" data-q="${esc(c)}">${esc(catName(c))}</button>`).join("")}</div></div>`;
@@ -301,10 +314,9 @@ function viewQuiz(v) {
   v.innerHTML = `<div class="wrap" style="max-width:680px"><div class="vhead"><span class="note">${tx("Question", "Frage")} ${qz.i + 1}/${qz.qs.length} · ${qz.c} ${tx("correct", "richtig")}${" · " + esc(quizLabel(qz.cat))}</span><div class="bar2"><i style="width:${qz.i / qz.qs.length * 100}%"></i></div></div>
     <div class="card quizc">${q.img ? `<img src="${q.img}" alt="">` : ""}<h2>${esc(q.q)}</h2>
       <div class="qopts" id="qo">${q.opts.map(o => `<button data-o="${esc(o)}" class="${qz.ans ? (o === q.a ? "right" : o === qz.ans ? "wrong" : "") : ""}" ${qz.ans ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>
-      ${qz.ans ? `<div class="why ${qz.ans === q.a ? "ok" : ""}"><b>${qz.ans === q.a ? tx("Right.", "Richtig.") : tx("Not quite.", "Nicht ganz.")}</b> ${esc(q.why || "")}</div><div class="chips"><button class="btn primary" id="qNext">${qz.i + 1 < qz.qs.length ? tx("Next question", "Nächste Frage") : tx("See result", "Ergebnis")}</button>${q.h ? `<button class="btn" data-h="${esc(q.h)}">${tx("View product", "Produkt ansehen")}</button>` : ""}</div>` : ""}</div></div>`;
+      ${qz.ans ? `<div class="why ${qz.ans === q.a ? "ok" : ""}"><b>${qz.ans === q.a ? tx("Right.", "Richtig.") : tx("Not quite.", "Nicht ganz.")}</b> ${esc(q.why || "")}${(() => { const sk = CATS.find(c => catName(c) === q.a); const st = sk && STYLE_TXT[sk] && STYLE_TXT[sk][lang === "de" ? "de" : "en"]; return st ? ` <span class="note" style="display:block;margin-top:6px;font-size:14px">${esc(catName(sk))}: ${esc(st[0])}</span>` : ""; })()}${q.h && byH[q.h] ? `<div class="whymore"><span class="note">${tx("Quick facts", "Kurz-Steckbrief")} · <b>${esc(byH[q.h].t)}</b></span><dl>${facts(byH[q.h]).map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("")}</dl></div>` : ""}</div><div class="chips"><button class="btn primary" id="qNext">${qz.i + 1 < qz.qs.length ? tx("Next question", "Nächste Frage") : tx("See result", "Ergebnis")}</button></div>` : ""}</div></div>`;
   $("#qo").onclick = e => { const b = e.target.closest("[data-o]"); if (!b || qz.ans) return; qz.ans = b.dataset.o; if (qz.ans === q.a) qz.c++; render(); };
   $("#qNext") && ($("#qNext").onclick = () => { qz.i++; qz.ans = null; render(); });
-  v.querySelector("[data-h]")?.addEventListener("click", e => go("product", { h: e.currentTarget.dataset.h }));
 }
 
 /* ---- flashcards ---- */
@@ -329,11 +341,11 @@ function viewCards(v) {
   const dk = fc.kind + "|" + fc.filter;
   if (!fc.deck || fc.deckKey !== dk) { fc.deck = shuffle(pool.map(p => p.h)); fc.deckKey = dk; fc.i = 0; fc.flip = false; }
   const p = byH[fc.deck[fc.i]];
-  v.innerHTML = `<div class="wrap" style="max-width:620px"><div class="vhead"><h1>${tx("Flashcards", "Karteikarten")}</h1><p>${tx("Learn every bike by sight. Look at the photo, say out loud what you know (riding style, frame, drivetrain, tyres), then flip the card to check. Mark it as known or as to repeat: cards you don't know yet come back more often. Knowing half of all bikes earns the Flashcards badge. ", "Lerne jedes Bike auf einen Blick. Foto ansehen, laut sagen was du weißt (Fahrstil, Rahmen, Antrieb, Reifen), dann umdrehen und prüfen. Markiere die Karte als gekonnt oder zum Wiederholen: Karten, die du noch nicht kannst, kommen öfter. Wer die Hälfte aller Bikes kennt, bekommt das Abzeichen Karteikarten. ")}${LEARN.known.length}/${BIKES.length} ${tx("known", "gekonnt")}</p></div>
-    ${catBar(fc.kind, "fck")}
-    <div class="chips" id="fcf">${[["all", tx("All", "Alle")], ["new", tx("Not known yet", "Noch nicht gekonnt")], ...(fc.kind === "k:bike" ? CATS.map(c => [c, catName(c)]) : [])].map(([k, l]) => `<button class="chip" data-f="${esc(k)}" aria-pressed="${fc.filter === k}">${esc(l)}</button>`).join("")}</div>
-    ${p ? `<button class="card flash ${fc.flip ? "back" : ""}" id="fcCard">${fc.flip ? `<b class="fct">${esc(p.t)}</b><dl>${facts(p).map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("")}</dl>` : `${p.img ? `<img src="${p.img}" alt="">` : cardArt(p)}<span class="note">${tx("Tap to flip", "Antippen zum Umdrehen")}</span>`}</button>
-    <div class="chips" style="justify-content:space-between"><span class="note">${fc.i + 1}/${fc.deck.length}</span><span class="chips"><button class="btn" id="fcAgain">${tx("Again", "Nochmal")}</button><button class="btn primary" id="fcKnow">${tx("I know it", "Kann ich")} ✓</button></span></div>` : `<div class="card empty">${tx("All known in this deck.", "Alle Karten in diesem Stapel gekonnt.")}</div>`}</div>`;
+  v.innerHTML = `<div class="wrap" style="max-width:620px"><div class="vhead"><div class="ttl"><span class="mic">${AIC.cards}</span><h1>${tx("Flashcards", "Karteikarten")}</h1></div><p>${tx("Look at the photo, say what you know, flip to check.", "Foto ansehen, sagen was du weißt, umdrehen und prüfen.")} ${LEARN.known.length}/${BIKES.length} ${tx("known", "gekonnt")}</p></div>
+    <div class="tsetup"><div class="row"><span class="lbl">${tx("Category", "Kategorie")}</span>${catBar(fc.kind, "fck")}</div>
+    <div class="row"><span class="lbl">${tx("Deck", "Stapel")}</span><div class="chips" id="fcf">${[["all", tx("All", "Alle")], ["new", tx("Not known yet", "Noch nicht gekonnt")], ...(fc.kind === "k:bike" ? CATS.map(c => [c, catName(c)]) : [])].map(([k, l]) => `<button class="chip" data-f="${esc(k)}" aria-pressed="${fc.filter === k}">${esc(l)}</button>`).join("")}</div></div></div>
+    ${p ? `<div class="tplay"><span class="mic">${AIC.cards}</span>${tx("Card", "Karte")} ${fc.i + 1} / ${fc.deck.length}</div><button class="card flash ${fc.flip ? "back" : ""}" id="fcCard">${fc.flip ? `<b class="fct">${esc(p.t)}</b><dl>${facts(p).map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("")}</dl>` : `${p.img ? `<img src="${p.img}" alt="">` : cardArt(p)}<span class="note">${tx("Tap to flip", "Antippen zum Umdrehen")}</span>`}</button>
+    <div class="chips" style="justify-content:flex-end"><span class="chips"><button class="btn" id="fcAgain">${tx("Again", "Nochmal")}</button><button class="btn primary" id="fcKnow">${tx("I know it", "Kann ich")} ✓</button></span></div>` : `<div class="card empty">${tx("All known in this deck.", "Alle Karten in diesem Stapel gekonnt.")}</div>`}</div>`;
   $("#fcf").onclick = e => { const b = e.target.closest("[data-f]"); if (b) { fc.filter = b.dataset.f; fc.deck = null; render(); } };
   $("#fck").onclick = e => { const b = e.target.closest("[data-kc]"); if (b) { fc.kind = b.dataset.kc; fc.filter = "all"; fc.deck = null; render(); } };
   if (!p) return;

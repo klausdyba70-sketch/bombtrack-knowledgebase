@@ -635,6 +635,39 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
   .cmh{padding:8px 0}
   .cmr .cmv{font-size:14px;line-height:1.4;overflow-wrap:break-word;hyphens:auto}
 }
+
+/* academy overview */
+.amods2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.amods2 button{display:flex;flex-direction:column;gap:14px;align-items:flex-start;text-align:left;padding:20px;border:1px solid var(--line);background:var(--card);border-radius:16px;cursor:pointer;color:var(--ink);font:inherit;transition:border-color .15s,transform .15s}
+.amods2 button:hover{border-color:var(--lime);transform:translateY(-1px)}
+.mic{width:48px;height:48px;border-radius:14px;background:var(--lime-soft);display:grid;place-items:center;color:var(--lime-deep)}
+.mic svg,.medal .ico svg,.go svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mtx{display:flex;flex-direction:column;gap:4px}.mtx b{font-family:var(--display);font-size:19px}.mtx .d{font-size:14px;color:var(--muted);line-height:1.45}
+.go{margin-top:auto;display:inline-flex;align-items:center;gap:6px;background:var(--lime);color:var(--lime-ink);border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+.go svg{width:16px;height:16px;stroke-width:2}
+.badges2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.bdg2{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:18px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+.bdg2 b{font-family:var(--display);font-size:15px;margin-top:4px}.bdg2 .note{font-size:12.5px;line-height:1.4}
+.bdg2 .pct{margin-top:auto;font-size:12px;font-weight:600;color:var(--muted)}.bdg2.on .pct{color:var(--lime-deep)}
+.medal{position:relative;width:64px;height:64px;display:grid;place-items:center;color:var(--muted)}
+.medal .ring{position:absolute;inset:0;transform:rotate(-90deg)}
+.medal .ring circle{fill:none;stroke-width:4}.medal .trk{stroke:var(--line)}.medal .val{stroke:var(--lime);stroke-linecap:round}
+.medal .ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--panel)}
+.medal .ico svg{width:22px;height:22px}
+.medal.on{color:var(--lime-ink)}.medal.on .ico{background:var(--lime)}
+.bdg2.cert{background:var(--panel)}
+@media (max-width:900px){.amods2{grid-template-columns:minmax(0,1fr)}.badges2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* training pages: setup vs play */
+.whymore{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:grid;gap:6px}
+.whymore dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0;font-size:13.5px}
+.whymore dt{color:var(--muted)}.whymore dd{margin:0}
+.tsetup .row{align-items:center}
+.tsetup{display:grid;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.tsetup .row{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.tsetup .lbl{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:92px}
+.tplay{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:17px;margin-top:6px}
+.tplay .mic{width:34px;height:34px;border-radius:10px}.tplay .mic svg{width:19px;height:19px}
+.vhead .ttl{display:flex;align-items:center;gap:12px}
 </style>
 
 <div class="gate" id="gate" hidden>

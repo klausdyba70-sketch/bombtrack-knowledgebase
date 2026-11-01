@@ -384,50 +384,49 @@ Reply with only JSON: {"score": integer 1-10, "summary": one sentence, "good": [
 
 /* objection stories: a customer, a bike, a doubt (shown like the advice cases) */
 const OBJSCEN = [
-  { id: "o-price", h: "bombtrack-arise", cat: "k:bike",
+  { id: "o-price", h: "bombtrack-arise", cat: "k:bike", lvl: 2,
     en: ["Steel singlespeed, really?", "Student, rides to uni every day and into the forest at weekends. Likes the Arise, but saw an aluminium bike with gears at a discounter for half the price.", "Why should I pay that much for a singlespeed made of steel?"],
     de: ["Stahl-Singlespeed, echt jetzt?", "Student, fährt täglich zur Uni und am Wochenende in den Wald. Mag das Arise, hat aber beim Discounter ein Alu-Rad mit Schaltung für die Hälfte gesehen.", "Warum soll ich so viel für ein Singlespeed aus Stahl zahlen?"] },
-  { id: "o-rust", h: "bombtrack-arise-tour", cat: "k:bike",
+  { id: "o-rust", h: "bombtrack-arise-tour", cat: "k:bike", lvl: 1,
     en: ["Winter commute by the sea", "Commutes 15 km along the coast all year, salt on the roads in winter. Wants the Arise Tour for the dynamo and racks, but a colleague told him steel always rusts.", "Steel will be rusty after one winter, won't it?"],
     de: ["Pendeln an der Küste", "Pendelt das ganze Jahr 15 km an der Küste, im Winter wird gestreut. Will das Arise Tour wegen Dynamo und Gepäckträger, aber ein Kollege meint, Stahl rostet immer.", "Nach einem Winter ist der Stahl doch durchgerostet, oder?"] },
-  { id: "o-carbon", h: "bombtrack-audax", cat: "k:bike",
+  { id: "o-carbon", h: "bombtrack-audax", cat: "k:bike", lvl: 2,
     en: ["Why not carbon?", "Experienced road rider, wants to go longer on gravel. Test-rode the Audax and liked it, but his club mates all ride carbon.", "For this money I'd rather get a carbon bike. Why steel?"],
     de: ["Warum nicht Carbon?", "Erfahrene Rennradfahrerin, will längere Gravel-Touren fahren. Hat das Audax probegefahren und mochte es, aber im Verein fahren alle Carbon.", "Für das Geld nehme ich lieber Carbon. Warum Stahl?"] },
-  { id: "o-weight", h: "bombtrack-beyond-plus-29", cat: "k:bike",
+  { id: "o-weight", h: "bombtrack-beyond-plus-29", cat: "k:bike", lvl: 1,
     en: ["Too heavy?", "Plans a two-week bikepacking trip through Scandinavia. Lifted the Beyond+ 29 in the shop and put it straight back.", "That thing is heavy. My road bike is half the weight."],
     de: ["Zu schwer?", "Plant zwei Wochen Bikepacking durch Skandinavien. Hat das Beyond+ 29 im Laden angehoben und sofort wieder abgestellt.", "Das Ding ist schwer. Mein Rennrad wiegt die Hälfte."] },
-  { id: "o-gravel", h: "bombtrack-hook", cat: "k:bike",
-    en: ["Road bike is enough", "Rides 5,000 km a year on the road. Her partner wants her to join on forest roads, so she's looking at the Hook, but isn't convinced.", "My road bike works fine. Do I really need another bike?"],
-    de: ["Rennrad reicht doch", "Fährt 5.000 km im Jahr auf der Straße. Ihr Partner will mit ihr auf Waldwege, deshalb schaut sie sich das Hook an, ist aber nicht überzeugt.", "Mein Rennrad reicht doch. Brauche ich wirklich noch ein Rad?"] },
-  { id: "o-tyres", h: "bombtrack-tension-rival", cat: "k:bike",
+  { id: "o-ext", h: "bombtrack-hook-ext-rival", cat: "k:bike", lvl: 2,
+    en: ["Hook or Hook EXT?", "Has decided on a Bombtrack Hook for gravel and bikepacking. Now stands between the Hook and the Hook EXT Rival and doesn't see the difference.", "The normal Hook looks almost the same. Why should I pay more for the EXT?"],
+    de: ["Hook oder Hook EXT?", "Hat sich für ein Bombtrack Hook für Gravel und Bikepacking entschieden. Steht jetzt zwischen Hook und Hook EXT Rival und sieht den Unterschied nicht.", "Das normale Hook sieht fast gleich aus. Warum soll ich für das EXT mehr zahlen?"] },
+  { id: "o-tyres", h: "bombtrack-tension-rival", cat: "k:bike", lvl: 3,
     en: ["Wider tyres later?", "Races cyclocross in winter and wants one bike for summer gravel rides too. Likes the Tension Rival.", "I'll just put 45 mm tyres on it in summer, that works, right?"],
     de: ["Später breitere Reifen?", "Fährt im Winter Cyclocross-Rennen und will ein Rad, das im Sommer auch für Gravel taugt. Mag das Tension Rival.", "Im Sommer ziehe ich einfach 45er Reifen auf, das geht doch, oder?"] },
-  { id: "o-brand", h: "bombtrack-beyond-1", cat: "k:bike",
-    en: ["Never heard of you", "Wants a first touring bike for a trip along the Danube. Likes the Beyond 1, but only knows the big brands.", "I've never heard of Bombtrack. How do I know it's any good?"],
-    de: ["Nie gehört", "Sucht das erste Reiserad für eine Tour an der Donau. Mag das Beyond 1, kennt aber nur die großen Marken.", "Von Bombtrack habe ich noch nie gehört. Woher weiß ich, dass das was taugt?"] },
-  { id: "o-online", h: "bombtrack-hook-ext-c-apex-axs", cat: "k:bike",
+  { id: "o-parts", h: "bombtrack-beyond-1", cat: "k:bike", lvl: 1,
+    en: ["Parts in five years?", "Wants the Beyond 1 for a long tour along the Danube and plans to keep it for many years. Bombtrack is a smaller brand than the ones she knows.", "Will I still get spare parts for it in five years?"],
+    de: ["Ersatzteile in fünf Jahren?", "Will das Beyond 1 für eine lange Tour an der Donau und es viele Jahre fahren. Bombtrack ist kleiner als die Marken, die sie kennt.", "Bekomme ich in fünf Jahren noch Ersatzteile dafür?"] },
+  { id: "o-online", h: "bombtrack-hook-ext-c-apex-axs", cat: "k:bike", lvl: 3,
     en: ["Cheaper online", "Has researched for weeks, knows every spec of the Hook EXT C Apex AXS and comes in with a screenshot from an online shop.", "Online it's cheaper. Why should I buy it from you?"],
     de: ["Online günstiger", "Hat wochenlang recherchiert, kennt jede Spec vom Hook EXT C Apex AXS und kommt mit einem Screenshot aus einem Onlineshop.", "Online ist es günstiger. Warum soll ich bei euch kaufen?"] },
-  { id: "o-cargo", h: "bombtrack-munroe-cargo", cat: "k:bike",
+  { id: "o-cargo", h: "bombtrack-munroe-cargo", cat: "k:bike", lvl: 3,
     en: ["No motor?", "Lives on a hill, wants to do the weekly shopping by bike. Likes the Munroe Cargo, but all her friends ride e-cargo bikes.", "Without a motor I'll never get up the hill with the shopping."],
     de: ["Ohne Motor?", "Wohnt am Berg, will den Wocheneinkauf mit dem Rad machen. Mag das Munroe Cargo, aber alle Freundinnen fahren E-Lastenräder.", "Ohne Motor komme ich mit den Einkäufen nie den Berg hoch."] },
-  { id: "o-sus", h: "bombtrack-beyond-sus", cat: "k:bike",
+  { id: "o-sus", h: "bombtrack-beyond-sus", cat: "k:bike", lvl: 2,
     en: ["40 mm is pointless", "Rides mountain bike trails and gravel. Saw the Beyond SUS with a short-travel fork and laughs about it.", "40 mm of suspension? Either a real mountain bike or no fork at all."],
     de: ["40 mm bringen nichts", "Fährt MTB-Trails und Gravel. Sieht das Beyond SUS mit kurzhubiger Federgabel und lacht darüber.", "40 mm Federweg? Entweder ein richtiges MTB oder gar keine Federung."] },
-  { id: "o-ti", h: "bombtrack-hook-ext-ti", cat: "k:bike",
+  { id: "o-ti", h: "bombtrack-hook-ext-ti", cat: "k:bike", lvl: 3,
     en: ["Titanium hype", "Wants a bike for the next ten years and is torn between the Hook EXT TI and a steel Hook EXT.", "Titanium is just overpriced hype, isn't it?"],
     de: ["Titan-Hype", "Will ein Rad für die nächsten zehn Jahre und schwankt zwischen dem Hook EXT TI und einem Hook EXT aus Stahl.", "Titan ist doch nur überteuerter Hype, oder?"] },
-  { id: "o-frameset", h: "bombtrack-hook-ext-frameset", cat: "k:frameset",
+  { id: "o-frameset", h: "bombtrack-hook-ext-frameset", cat: "k:frameset", lvl: 2,
     en: ["Building up costs more", "Hobby mechanic with a box full of parts. Wants to build up a Hook EXT Frameset himself.", "A frameset plus parts costs more than a complete bike. Why bother?"],
     de: ["Aufbauen ist teurer", "Hobbyschrauber mit einer Kiste voller Teile. Will ein Hook EXT Frameset selbst aufbauen.", "Frameset plus Teile kostet mehr als ein Komplettrad. Warum sollte ich das machen?"] },
-  { id: "o-hanger", h: "bombtrack-bt-dh-008-derailleur-hanger", cat: "k:part",
+  { id: "o-hanger", h: "bombtrack-bt-dh-008-derailleur-hanger", cat: "k:part", lvl: 1,
     en: ["Bent again", "Comes in with a Hook after a fall, the derailleur hanger is bent for the second time this year.", "Why does this part break so easily? Sounds like bad quality."],
-    de: ["Schon wieder verbogen", "Kommt nach einem Sturz mit seinem Hook, das Schaltauge ist dieses Jahr zum zweiten Mal verbogen.", "Warum geht das Teil so leicht kaputt? Klingt nach schlechter Qualität."] },
-  { id: "o-socks", h: "bombtrack-achromatic-socks", cat: "k:gear",
-    en: ["Just socks", "Buys a new bike and gets offered matching Bombtrack socks and a cap at the counter.", "Why should I pay extra for socks with a logo on them?"],
-    de: ["Nur Socken", "Kauft ein neues Rad und bekommt an der Theke passende Bombtrack-Socken und eine Cap angeboten.", "Warum soll ich extra Geld für Socken mit Logo ausgeben?"] }
+    de: ["Schon wieder verbogen", "Kommt nach einem Sturz mit seinem Hook, das Schaltauge ist dieses Jahr zum zweiten Mal verbogen.", "Warum geht das Teil so leicht kaputt? Klingt nach schlechter Qualität."] }
 ];
 let prTone = "normal";
+const LVLS = { 1: ["relaxed", "Easy", "Einfach"], 2: ["normal", "Medium", "Mittel"], 3: ["demanding", "Hard", "Schwer"] };
+const lvlPill = l => { const x = LVLS[l] || LVLS[2], T = TONES[x[0]]; return `<span class="lvl l${l}"><i></i><i></i><i></i>${esc(lang === "de" ? x[2] : x[1])} · ${esc(T[lang === "de" ? "de" : "en"])}</span>`; };
 const TONES = {
   relaxed: { en: "Relaxed", de: "Entspannt", p: "Friendly, open and easy-going. You trust the staff and are happy to hear suggestions." },
   normal: { en: "Neutral", de: "Neutral", p: "Polite but undecided. You ask follow-up questions and compare options." },
@@ -438,7 +437,7 @@ function bindTone() { const el = $("#prTone"); if (el) el.onclick = e => { const
 function startObjTalk(id) {
   const o = OBJSCEN.find(x => x.id === id); const p = byH[o.h];
   const L2 = lang === "de" ? o.de : o.en;
-  pr = { sc: { id: o.id, kind: "obj", objText: L2[2], en: [o.en[0], `${o.en[1]} The customer's doubt about the ${p ? p.t : ""}: "${o.en[2]}"`], de: [o.de[0], `${o.de[1]} Einwand: „${o.de[2]}“`] }, turns: [], fb: null, busy: false };
+  pr = { sc: { id: o.id, kind: "obj", lvl: o.lvl || 2, objText: L2[2], en: [o.en[0], `${o.en[1]} The customer's doubt about the ${p ? p.t : ""}: "${o.en[2]}"`], de: [o.de[0], `${o.de[1]} Einwand: „${o.de[2]}“`] }, turns: [], fb: null, busy: false };
   render(); customerTurn();
 }
 function renderTrainTabs() { return `<div class="chips" id="trTabs">${[["conv", tx("General advice", "Allgemeine Beratung")], ["obj", tx("Objections", "Einwände")], ["pitch", tx("30-second pitch", "30-Sekunden-Pitch")]].map(([k, l]) => `<button class="chip" data-m="${k}" aria-pressed="${ob.mode === k}">${esc(l)}</button>`).join("")}</div>`; }
@@ -446,11 +445,11 @@ function bindTrainTabs() { $("#trTabs").onclick = e => { const b = e.target.clos
 function viewObjPitch(v) {
   if (ob.mode === "obj") {
     v.innerHTML = `<div class="wrap"><div class="vhead"><h1>${esc(t("prTitle"))}</h1><p>${tx("A customer likes a product but has a doubt. Talk it through in the chat, then finish and get feedback on how well you handled it.", "Kundschaft mag ein Produkt, hat aber einen Einwand. Kläre das im Chat, beende das Gespräch und bekomm Feedback, wie gut du reagiert hast.")}</p></div>${renderTrainTabs()}
-      <div class="tsetup"><div class="row"><span class="lbl">${tx("Customer", "Kundschaft")}</span>${toneBar()}</div><div class="row"><span class="lbl">${tx("Category", "Kategorie")}</span>${catBar(prCat, "prk")}</div></div>
-      <h3 class="setgrp">${tx("Pick a case to start", "Fall wählen und loslegen")}</h3>
-      <div class="scen" id="objs">${OBJSCEN.filter(o => o.cat === prCat).map(o => { const L2 = lang === "de" ? o.de : o.en; return `<button data-o="${o.id}"><b>${esc(L2[0])}</b><span>${esc(L2[1])}</span><span class="objq">„${esc(L2[2])}“</span></button>`; }).join("") || `<div class="card empty">–</div>`}</div>
+      <div class="tsetup"><div class="row"><span class="lbl">${tx("Category", "Kategorie")}</span>${catBar(prCat, "prk")}</div></div>
+      <h3 class="setgrp">${tx("Pick a case: easy first, then harder", "Fall wählen: erst einfach, dann schwerer")}</h3>
+      <div class="scen" id="objs">${OBJSCEN.filter(o => o.cat === prCat).sort((a, b) => (a.lvl || 2) - (b.lvl || 2)).map(o => { const L2 = lang === "de" ? o.de : o.en; return `<button data-o="${o.id}">${lvlPill(o.lvl || 2)}<b>${esc(L2[0])}</b><span>${esc(L2[1])}</span><span class="objq">„${esc(L2[2])}“</span></button>`; }).join("") || `<div class="card empty">–</div>`}</div>
       ${!sample ? `<div class="card empty">${esc(t("noChat"))}</div>` : ""}</div>`;
-    bindTrainTabs(); bindTone();
+    bindTrainTabs();
     $("#prk").onclick = e => { const b = e.target.closest("[data-kc]"); if (b) { prCat = b.dataset.kc; render(); } };
     $("#objs").onclick = e => { const b = e.target.closest("[data-o]"); if (b && sample) startObjTalk(b.dataset.o); };
     return;

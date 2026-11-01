@@ -39,6 +39,7 @@ const AIC = {
   practice: '<svg viewBox="0 0 24 24"><path d="M3.5 6A2 2 0 0 1 5.5 4h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-3.5 3v-3a2 2 0 0 1-2-2z"/><path d="M15.5 8.5h3a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2v3L15 17h-3.5a2 2 0 0 1-1.8-1.2"/></svg>',
   star: '<svg viewBox="0 0 24 24"><path d="m12 4 2.3 4.8 5.2.7-3.8 3.6.9 5.2L12 15.8l-4.6 2.5.9-5.2-3.8-3.6 5.2-.7z"/></svg>',
   cert: '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="m9 13.5-1.5 6.5L12 18l4.5 2-1.5-6.5"/></svg>',
+  styles: '<svg viewBox="0 0 24 24"><circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-7h5l3 7M10 9l2 7h-6M13.5 6.5H16"/></svg>',
   lock: '<svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>',
   arrow: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
 };
@@ -63,6 +64,7 @@ function viewAcademy(v) {
   const roleName = (ROLES().find(r => r[0] === LEARN.role) || [0, ""])[1];
   const mods = [
     ["quiz", tx("Quiz", "Quiz"), tx("10 questions from the real product data, with the reason for every answer.", "10 Fragen aus den echten Produktdaten, mit Erklärung zu jeder Antwort."), quizPct(LEARN) != null ? quizPct(LEARN) + " %" : ""],
+    ["stylequiz", tx("Riding styles test", "Fahrstil-Test"), tx("8 questions plus one style explained in your own words.", "8 Fragen und ein Fahrstil in eigenen Worten erklärt."), ""],
     ["cards", tx("Flashcards", "Karteikarten"), tx("Photo on the front, key facts on the back. Learn every bike by sight.", "Foto vorne, Fakten hinten. Lerne jedes Bike auf einen Blick."), LEARN.known.length ? LEARN.known.length + "/" + BIKES.length : ""],
     ["practice", t("practice"), tx("Claude plays the customer, you advise and get feedback.", "Claude spielt die Kundschaft, du berätst und bekommst Feedback."), Math.max(LEARN.practice?.best || 0, LEARN.pitch?.best || 0, LEARN.obj?.best || 0) ? tx("best ", "bestes ") + Math.max(LEARN.practice?.best || 0, LEARN.pitch?.best || 0, LEARN.obj?.best || 0) + "/10" : ""]
   ];
@@ -77,7 +79,7 @@ function viewAcademy(v) {
       <p>${tx("Train with the real product data. Everything earns XP and counts towards your badges.", "Trainiere mit den echten Produktdaten. Alles bringt XP und zählt für deine Abzeichen.")}</p></div>
     ${cert ? `<div class="card certi"><span class="note">BOMBTRACK · KNOWLEDGE &amp; ADVICE</span><b>Bombtrack Certified</b><span>${esc(LEARN.name)}</span><span class="note">${esc(roleName)} · ${new Date().toLocaleDateString(lang === "de" ? "de-DE" : "en-GB")}</span></div>` : ""}
     <h3 class="setgrp">${tx("Start training", "Training starten")}</h3>
-    <div class="amods2" id="amods">${mods.map(([k, ti, d, st]) => `<button data-v="${k}"><span class="mic">${AIC[k]}</span><span class="mtx"><b>${esc(ti)}${st ? ` <span class="pill">${esc(st)}</span>` : ""}</b><span class="d">${esc(d)}</span></span><span class="go">${tx("Start", "Starten")} ${AIC.arrow}</span></button>`).join("")}</div>
+    <div class="amods2" id="amods">${mods.map(([k, ti, d, st]) => `<button data-v="${k}"><span class="mic">${AIC[k === "stylequiz" ? "styles" : k]}</span><span class="mtx"><b>${esc(ti)}${st ? ` <span class="pill">${esc(st)}</span>` : ""}</b><span class="d">${esc(d)}</span></span><span class="go">${tx("Start", "Starten")} ${AIC.arrow}</span></button>`).join("")}</div>
     <h3 class="setgrp">${tx("Your badges", "Deine Abzeichen")} · ${done}/${B.length}</h3>
     <div class="badges2">${B.map(b => `<div class="bdg2 ${b.p >= 1 ? "on" : ""}">${medal(b.ic, b.p)}<b>${esc(b.t)}</b><span class="note">${esc(b.d)}</span><span class="pct">${b.p >= 1 ? tx("Earned", "Erreicht") : Math.round(Math.min(1, b.p) * 100) + " %"}</span></div>`).join("")}
       <div class="bdg2 cert ${cert ? "on" : ""}">${medal("cert", done / B.length)}<b>Bombtrack Certified</b><span class="note">${tx("All three badges", "Alle drei Abzeichen")}</span><span class="pct">${cert ? tx("Earned", "Erreicht") : done + "/" + B.length}</span></div></div>
@@ -476,5 +478,78 @@ function viewObjPitch(v) {
     try { ob.res = await ai(isObj ? "objection" : "pitch", aiScore(isObj ? "obj" : "pitch"), { cache: false }, true); const s = +ob.res.score || 0; const slot = isObj ? LEARN.obj : LEARN.pitch; slot.n++; slot.best = Math.max(slot.best, s); addXP(10 + s); }
     catch (e) { ob.res = { score: "–", summary: ERR[e.code] || tx("Feedback couldn't be created. Try again.", "Feedback konnte nicht erstellt werden. Bitte nochmal versuchen.") }; }
     ob.busy = false; if (route.v === "practice") render();
+  };
+}
+
+/* ---- riding styles test: multiple choice + explain in your own words ---- */
+let rs = null;
+const RS_TYPES = ["terrain", "setup", "who", "notfor", "differs"];
+function newStyleTest() {
+  const L2 = lang === "de" ? "de" : "en";
+  const styles = CATS.filter(c => STYLE_TXT[c] && STYLE_MORE[c]);
+  const field = (c, k) => k === "who" ? STYLE_TXT[c][L2][1] : STYLE_MORE[c][L2][k];
+  const Q = { terrain: [tx("Where is this riding style at home?", "Wo ist dieser Fahrstil zu Hause?")], setup: [tx("Which riding style has this typical setup?", "Welcher Fahrstil hat dieses typische Setup?")], who: [tx("Which riding style suits these customers?", "Zu welchem Fahrstil passt diese Kundschaft?")], notfor: [tx("For which riding style is this NOT ideal?", "Für welchen Fahrstil ist das hier eher NICHT ideal?")], differs: [tx("Which riding style is described here?", "Welcher Fahrstil wird hier beschrieben?")] };
+  const pool = [];
+  for (const c of styles) for (const k of RS_TYPES) { const txt = field(c, k); if (txt) pool.push({ c, k, txt }); }
+  const qs = shuffle(pool).slice(0, 8).map(x => ({ q: Q[x.k][0], quote: x.txt, opts: shuffle(shuffle(styles.map(catName)).filter(n => n !== catName(x.c)).slice(0, 3).concat(catName(x.c))), a: catName(x.c), c: x.c }));
+  return { qs, i: 0, n: 0, ans: null, phase: "mc", style: styles[Math.floor(Math.random() * styles.length)], text: "", res: null, busy: false };
+}
+function viewStyleTest(v) {
+  v.style.padding = "";
+  if (needProfile(v)) return;
+  const L2 = lang === "de" ? "de" : "en";
+  const head = `<div class="vhead"><div class="ttl"><span class="mic">${AIC.styles}</span><h1>${tx("Riding styles test", "Fahrstil-Test")}</h1></div><p>${tx("Part 1: 8 quick questions. Part 2: explain one riding style in your own words, Claude gives feedback.", "Teil 1: 8 kurze Fragen. Teil 2: einen Fahrstil in eigenen Worten erklären, Claude gibt Feedback.")}</p></div>`;
+  if (!rs) {
+    v.innerHTML = `<div class="wrap" style="max-width:680px">${head}<div class="card" style="padding:22px;display:grid;gap:12px;justify-items:start">
+      <div class="steps2"><div><b>1</b>${tx("Multiple choice", "Multiple Choice")}<span class="note">${tx("8 questions about terrain, setup, customers and limits", "8 Fragen zu Gelände, Setup, Kundschaft und Grenzen")}</span></div><div><b>2</b>${tx("In your own words", "In eigenen Worten")}<span class="note">${tx("Explain a style like at the counter", "Einen Fahrstil erklären wie an der Theke")}</span></div></div>
+      <button class="btn primary" id="rsGo">${tx("Start test", "Test starten")} →</button>
+      <button class="back" id="rsLearn">${tx("Read the riding styles first", "Erst die Fahrstile nachlesen")}</button></div></div>`;
+    $("#rsGo").onclick = () => { rs = newStyleTest(); render(); };
+    $("#rsLearn").onclick = () => go("styles");
+    return;
+  }
+  if (rs.phase === "mc") {
+    const q = rs.qs[rs.i];
+    v.innerHTML = `<div class="wrap" style="max-width:680px">${head}<div class="vhead" style="gap:6px"><span class="note">${tx("Part 1 · Question", "Teil 1 · Frage")} ${rs.i + 1}/${rs.qs.length} · ${rs.n} ${tx("correct", "richtig")}</span><div class="bar2"><i style="width:${rs.i / rs.qs.length * 100}%"></i></div></div>
+      <div class="card quizc"><h2>${esc(q.q)}</h2><blockquote class="rsq">„${esc(q.quote)}“</blockquote>
+      <div class="qopts" id="qo">${q.opts.map(o => `<button data-o="${esc(o)}" class="${rs.ans ? (o === q.a ? "right" : o === rs.ans ? "wrong" : "") : ""}" ${rs.ans ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>
+      ${rs.ans ? `<div class="why ${rs.ans === q.a ? "ok" : ""}"><b>${rs.ans === q.a ? tx("Right.", "Richtig.") : tx("Not quite.", "Nicht ganz.")}</b> ${esc(q.a)}: ${esc(STYLE_TXT[q.c][L2][0])}<span class="note" style="display:block;margin-top:6px">${tx("Counter tip", "Tipp für die Theke")}: ${esc(STYLE_MORE[q.c][L2].tip || STYLE_TXT[q.c][L2][3] || "")}</span></div>
+      <div class="chips"><button class="btn primary" id="rsNext">${rs.i + 1 < rs.qs.length ? tx("Next question", "Nächste Frage") : tx("On to part 2", "Weiter zu Teil 2")}</button></div>` : ""}</div></div>`;
+    $("#qo").onclick = e => { const b = e.target.closest("[data-o]"); if (!b || rs.ans) return; rs.ans = b.dataset.o; if (rs.ans === q.a) rs.n++; render(); };
+    $("#rsNext") && ($("#rsNext").onclick = () => { rs.i++; rs.ans = null; if (rs.i >= rs.qs.length) { rs.phase = "explain"; addXP(rs.n * 3); } render(); });
+    return;
+  }
+  const r = rs.res, styles = CATS.filter(c => STYLE_TXT[c]);
+  v.innerHTML = `<div class="wrap" style="max-width:720px">${head}
+    <div class="card" style="padding:14px 18px;display:flex;gap:14px;align-items:center"><span class="note">${tx("Part 1 result", "Ergebnis Teil 1")}</span><b style="font-family:var(--display);font-size:22px">${rs.n}/${rs.qs.length}</b><span class="note">${tx("correct", "richtig")}</span></div>
+    <h3 class="setgrp">${tx("Part 2 · Explain in your own words", "Teil 2 · In eigenen Worten erklären")}</h3>
+    <div class="tsetup"><div class="row"><span class="lbl">${tx("Riding style", "Fahrstil")}</span><div class="chips" id="rsSt">${styles.map(c => `<button class="chip" data-c="${esc(c)}" aria-pressed="${rs.style === c}">${esc(catName(c))}</button>`).join("")}</div></div></div>
+    <div class="bubble cust">${esc(tx(`A customer asks: "What exactly is a ${catName(rs.style)} bike, and is it right for me?" Explain it like at the counter: what it's made for, the typical setup, how it differs from other styles, and who it's not ideal for.`, `Eine Kundin fragt: „Was genau ist eigentlich ${catName(rs.style)}, und ist das was für mich?" Erklär es wie an der Theke: wofür es gemacht ist, das typische Setup, der Unterschied zu anderen Fahrstilen und für wen es eher nichts ist.`))}</div>
+    <div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px"><textarea id="rsT" rows="5" class="field" style="border:0;padding:0;resize:vertical" placeholder="${tx("Your explanation…", "Deine Erklärung…")}">${esc(rs.text)}</textarea>
+      <div class="chips" style="justify-content:flex-end"><button class="btn primary" id="rsFb" ${rs.busy || !sample ? "disabled" : ""}>${rs.busy ? esc(t("thinking")) : tx("Get feedback", "Feedback holen")}</button></div></div>
+    ${!sample ? `<div class="card empty">${esc(t("noChat"))}</div>` : ""}
+    ${r ? `<div class="card" style="padding:18px;display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><div class="note">${esc(t("score"))}</div><div class="score">${esc(r.score ?? "–")}<span class="muted" style="font-size:22px">/10</span></div></div><p style="margin:0;flex:1;min-width:220px">${esc(r.summary || "")}</p></div>
+      <div class="fb"><div class="card"><h3>${esc(t("good"))}</h3><ul>${(r.good || []).map(x => `<li>${esc(x)}</li>`).join("") || "<li>–</li>"}</ul></div><div class="card"><h3>${esc(t("missed"))}</h3><ul>${(r.missed || []).map(x => `<li>${esc(x)}</li>`).join("") || "<li>–</li>"}</ul></div></div>
+      <div class="card" style="padding:14px 16px"><h3 style="font-size:15px;margin-bottom:6px">${tx("How you could say it", "So könntest du es sagen")}</h3><p style="margin:0">${esc(r.better || "")}</p></div>` : ""}
+    <div class="chips"><button class="btn" id="rsAgain">${tx("New test", "Neuer Test")}</button><button class="back" id="rsBack">${tx("Back to Academy", "Zur Academy")}</button></div></div>`;
+  $("#rsSt").onclick = e => { const b = e.target.closest("[data-c]"); if (b) { rs.style = b.dataset.c; rs.res = null; render(); } };
+  $("#rsT").oninput = e => { rs.text = e.target.value; };
+  $("#rsAgain").onclick = () => { rs = newStyleTest(); render(); };
+  $("#rsBack").onclick = () => go("academy");
+  $("#rsFb").onclick = async () => {
+    rs.text = $("#rsT").value.trim(); if (!rs.text || rs.busy || !sample) return; rs.busy = true; render();
+    const c = rs.style, ref = `Intro: ${STYLE_TXT[c].en[0]}\nTypical customers: ${STYLE_TXT[c].en[1]}\nWhat to look for: ${STYLE_TXT[c].en[3] || ""}\n` + Object.entries(STYLE_MORE[c].en).map(([k, x]) => `${k}: ${x}`).join("\n");
+    const prompt = `You are a Bombtrack sales trainer. A shop employee explained the riding style "${catName(c)}" to a customer in their own words. Grade it against Bombtrack's reference below: correct meaning, typical terrain and setup, how it differs from other styles, who it is not ideal for, and whether a customer would understand it. Wording can differ; judge the content. Be encouraging but honest. Write in ${lang === "de" ? "German (du-form, keep Bombtrack's English terms like Gravel, Allroad, Bikepacking)" : "English"}, no em-dashes.
+
+REFERENCE:
+${ref}
+
+EMPLOYEE'S EXPLANATION:
+${rs.text}
+
+Reply with only JSON: {"score": integer 1-10, "summary": one sentence, "good": [1-3 short points], "missed": [1-3 short points with what was missing or wrong], "better": "a short, natural model explanation of 2-4 sentences"}`;
+    try { rs.res = await ai("styleExplain", prompt, { cache: false }, true); addXP(5 + (+rs.res.score || 0)); }
+    catch (e) { rs.res = { score: "–", summary: ERR[e.code] || tx("Feedback couldn't be created. Try again.", "Feedback konnte nicht erstellt werden. Bitte nochmal versuchen.") }; }
+    rs.busy = false; if (route.v === "stylequiz") render();
   };
 }

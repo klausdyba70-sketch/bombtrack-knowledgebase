@@ -613,7 +613,9 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 .tier.t-quick{background:var(--lime-soft)}.tier.t-default{background:var(--lime);color:var(--lime-ink)}.tier.t-complex{background:var(--ink);color:var(--page)}
 .share{display:inline-block;width:70px;height:8px;border-radius:99px;background:var(--lime-soft);overflow:hidden;vertical-align:middle}.share i{display:block;height:100%;background:var(--lime)}
 .linkbtn{border:0;background:none;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 2px}.linkbtn:hover{color:var(--ink)}
-.ver{margin-top:auto;padding:14px 16px 6px;font-size:10px;line-height:1.3;color:var(--muted);opacity:.65;font-family:var(--mono);user-select:all}
+.brand .brandtxt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.brand .ver{display:block}
+.ver{font-size:9.5px;line-height:1.2;color:var(--muted);opacity:.7;font-family:var(--mono);font-weight:400;letter-spacing:0;white-space:nowrap}
 .pkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-top:12px}
 .pkbar #ckinds{margin-top:0}
 .chip .cnt{background:var(--lime);color:var(--lime-ink);border-radius:999px;padding:0 6px;font-size:11px;font-weight:700}
@@ -822,12 +824,11 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 
 <div class="shell" id="shell">
   <aside class="side" id="side">
-    <div class="brand"><b>BOMBTRACK</b><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
+    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v f4cf222 · 01.11.2026 16:19</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
     <button class="newchat" id="newChat">＋ <span data-t="newChat">New chat</span></button>
     <nav class="nav" id="nav"></nav>
     <div class="nav"><div class="grp" data-t="recent">Recent chats</div></div>
     <div class="hist" id="hist"></div>
-    <div class="ver" id="appVer">v 3b89b1c · 01.11.2026 16:18</div>
   </aside>
   <div class="scrim" id="scrim"></div>
   <main class="main">

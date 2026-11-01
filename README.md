@@ -33,7 +33,7 @@ The Claude API key only lives in Cloudflare as a secret. Browsers never see it.
    npx wrangler secret put ANTHROPIC_API_KEY   # from platform.claude.com/settings/keys
    npx wrangler secret put TEAM_PASSWORD
    npx wrangler secret put ADMIN_PASSWORD
-   npx wrangler secret put SESSION_SECRET      # any long random text
+   npx wrangler secret put SESSION_SECRET      # any random text, at least 16 characters
    ```
 3. **Deploy**: either `npm run deploy`, or connect the GitHub repo in Cloudflare
    (Workers & Pages › Create › Import a repository) with
@@ -60,3 +60,12 @@ Override with `MODEL_QUICK`, `MODEL_DEFAULT`, `MODEL_COMPLEX` in `wrangler.jsonc
 ## Handing over to a client
 
 The client creates its own Cloudflare account, Claude Console organisation and API key, and its own GitHub repo (copy of this one). Set its secrets and D1 id; nothing in the app changes.
+
+## Security
+
+- Passwords and the API key are Cloudflare secrets (encrypted, never in GitHub, never sent to the browser).
+- Login cookie: HttpOnly, Secure, signed (HMAC), valid 30 days.
+- Max 10 login attempts per IP per 15 minutes.
+- Changing `TEAM_PASSWORD` or `ADMIN_PASSWORD` logs out everyone with that role; changing `SESSION_SECRET` logs out everyone.
+- Admin-only data (settings, team answers, uploads) is enforced on the server, not just hidden in the UI.
+- Pages are marked noindex and cannot be embedded in other sites.

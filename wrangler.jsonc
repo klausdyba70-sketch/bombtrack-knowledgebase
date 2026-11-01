@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bombtrack-knowledgebase",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "partbase",
+      // Paste the id printed by: npx wrangler d1 create partbase
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ],
+  "vars": {
+    "CHAT_LIMIT_PER_HOUR": "120",
+    "MAX_TOKENS": "2048"
+    // Optional model overrides: "MODEL_QUICK", "MODEL_DEFAULT", "MODEL_COMPLEX"
+  },
+  "observability": { "enabled": true }
+}

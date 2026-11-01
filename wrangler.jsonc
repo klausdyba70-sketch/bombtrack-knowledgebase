@@ -21,5 +21,7 @@
     "MAX_TOKENS": "2048"
     // Optional model overrides: "MODEL_QUICK", "MODEL_DEFAULT", "MODEL_COMPLEX"
   },
+  // Keep variables and secrets set in the Cloudflare dashboard when deploying from GitHub.
+  "keep_vars": true,
   "observability": { "enabled": true }
 }

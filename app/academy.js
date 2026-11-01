@@ -381,9 +381,37 @@ ${prodText(p, lang)}
 
 Reply with only JSON: {"score": integer 1-10, "summary": one sentence, "good": [1-3 short points], "fix": [0-3 short points incl. wrong claims with the correct value], "better": one improved answer in at most 3 sentences}`;
 }
-function renderTrainTabs() { return `<div class="chips" id="trTabs">${[["conv", tx("Customer talk", "Kundengespräch")], ["obj", tx("Objections", "Einwände")], ["pitch", tx("30-second pitch", "30-Sekunden-Pitch")]].map(([k, l]) => `<button class="chip" data-m="${k}" aria-pressed="${ob.mode === k}">${esc(l)}</button>`).join("")}</div>`; }
+let prTone = "normal";
+const TONES = {
+  relaxed: { en: "Relaxed", de: "Entspannt", p: "Friendly, open and easy-going. You trust the staff and are happy to hear suggestions." },
+  normal: { en: "Neutral", de: "Neutral", p: "Polite but undecided. You ask follow-up questions and compare options." },
+  demanding: { en: "Demanding", de: "Fordernd", p: "Impatient, sceptical and a bit pushy. You question claims, mention cheaper offers online or other brands, interrupt with follow-ups and want precise answers fast. Stay realistic and never rude." }
+};
+const toneBar = () => `<div class="chips" id="prTone">${Object.entries(TONES).map(([k, x]) => `<button class="chip" data-tone="${k}" aria-pressed="${prTone === k}">${esc(x[lang === "de" ? "de" : "en"])}</button>`).join("")}</div>`;
+function bindTone() { const el = $("#prTone"); if (el) el.onclick = e => { const b = e.target.closest("[data-tone]"); if (b) { prTone = b.dataset.tone; render(); } }; }
+function startObjTalk() {
+  const o = OBJ.find(x => x[0] === ob.obj), p = byH[ob.bike];
+  const en = `The customer is interested in the ${p.t} (${catName(p.cat)}), but has a doubt: "${o[1]}"`;
+  const de = `Die Kundschaft interessiert sich für das ${p.t}, hat aber einen Einwand: „${o[2]}“`;
+  pr = { sc: { id: "obj-" + o[0], kind: "obj", objText: lang === "de" ? o[2] : o[1], en: [tx("Objection: ", "Einwand: ") + p.t, en], de: [tx("Objection: ", "Einwand: ") + p.t, de] }, turns: [], fb: null, busy: false };
+  render(); customerTurn();
+}
+function renderTrainTabs() { return `<div class="chips" id="trTabs">${[["conv", tx("General advice", "Allgemeine Beratung")], ["obj", tx("Objections", "Einwände")], ["pitch", tx("30-second pitch", "30-Sekunden-Pitch")]].map(([k, l]) => `<button class="chip" data-m="${k}" aria-pressed="${ob.mode === k}">${esc(l)}</button>`).join("")}</div>`; }
 function bindTrainTabs() { $("#trTabs").onclick = e => { const b = e.target.closest("[data-m]"); if (b) { ob.mode = b.dataset.m; ob.res = null; ob.text = ""; render(); } }; }
 function viewObjPitch(v) {
+  if (ob.mode === "obj") {
+    const p = byH[ob.bike];
+    v.innerHTML = `<div class="wrap" style="max-width:820px"><div class="vhead"><h1>${esc(t("prTitle"))}</h1><p>${tx("A customer likes a bike but has a doubt. Talk it through in the chat, then finish and get feedback on how well you handled it.", "Eine Kundin oder ein Kunde mag ein Bike, hat aber einen Einwand. Kläre das im Chat, beende das Gespräch und bekomm Feedback, wie gut du reagiert hast.")}</p></div>${renderTrainTabs()}
+      <div class="tsetup"><div class="row"><span class="lbl">${tx("Customer", "Kundschaft")}</span>${toneBar()}</div>
+        <div class="row"><span class="lbl">${t("bike")}</span><select id="ob_b" class="field" style="max-width:320px">${BIKES.map(b => `<option value="${esc(b.h)}" ${b.h === ob.bike ? "selected" : ""}>${esc(b.t)}</option>`).join("")}</select></div></div>
+      <h3 class="setgrp">${tx("Pick an objection to start", "Einwand wählen und loslegen")}</h3>
+      <div class="scen" id="objs">${OBJ.map(x => `<button data-o="${x[0]}"><b>„${esc(lang === "de" ? x[2] : x[1])}“</b><span>${esc(p ? p.t : "")}</span></button>`).join("")}</div>
+      ${!sample ? `<div class="card empty">${esc(t("noChat"))}</div>` : ""}</div>`;
+    bindTrainTabs(); bindTone();
+    $("#ob_b").onchange = e => { ob.bike = e.target.value; render(); };
+    $("#objs").onclick = e => { const b = e.target.closest("[data-o]"); if (b && sample) { ob.obj = b.dataset.o; startObjTalk(); } };
+    return;
+  }
   const isObj = ob.mode === "obj", o = OBJ.find(x => x[0] === ob.obj), p = byH[ob.bike];
   const r = ob.res;
   v.innerHTML = `<div class="wrap" style="max-width:820px"><div class="vhead"><h1>${esc(t("prTitle"))}</h1><p>${isObj ? tx("Answer a typical objection. Claude checks your answer against the real specs.", "Beantworte einen typischen Einwand. Claude prüft deine Antwort gegen die echten Specs.") : tx("Pitch a bike in your own words, as if you had 30 seconds at the counter.", "Stell ein Bike in eigenen Worten vor, als hättest du 30 Sekunden an der Theke.")}</p></div>${renderTrainTabs()}

@@ -151,6 +151,7 @@
     if (Array.isArray(input) && input.length > 1 && input[0].role === "user" && input[1].role === "user") { system = String(input[0].content); src = input.slice(1); }
     const messages = toMessages(src);
     let rounds = 0, all = "", last = null;
+    const usage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
     while (true) {
       if (opts.signal && opts.signal.aborted) throw { code: "cancelled", message: "Cancelled" };
       const sep = all ? "\n\n" : ""; let roundText = "";
@@ -170,6 +171,7 @@
         return r.json();
       }).catch(e => { throw e && e.name === "AbortError" ? { code: "cancelled", message: "Cancelled", text: all || undefined } : e; });
 
+      for (const k in usage) usage[k] += (last.usage && last.usage[k]) || 0;
       const txt = textOf(last.content);
       if (txt) { all += sep + txt; if (opts.onText && !roundText) opts.onText({ text: all, delta: txt }); }
       const calls = (last.content || []).filter(b => b.type === "tool_use");
@@ -187,7 +189,8 @@
       messages.push({ role: "user", content: results });
     }
     if (!all.trim()) throw { code: "empty_completion", message: "Empty answer" };
-    return { text: all, truncated: last.stop_reason === "max_tokens", modelTierApplied: tier, usage: last.usage };
+    sample.lastUsage = usage;
+    return { text: all, truncated: last.stop_reason === "max_tokens", modelTierApplied: tier, usage };
   }
   sample.json = async (input, opts) => {
     const msgs = toMessages(input);

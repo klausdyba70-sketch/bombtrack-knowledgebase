@@ -151,6 +151,7 @@
     if (Array.isArray(input) && input.length > 1 && input[0].role === "user" && input[1].role === "user") { system = String(input[0].content); src = input.slice(1); }
     const messages = toMessages(src);
     let rounds = 0, all = "", last = null;
+    const usage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
     while (true) {
       if (opts.signal && opts.signal.aborted) throw { code: "cancelled", message: "Cancelled" };
       const sep = all ? "\n\n" : ""; let roundText = "";
@@ -170,6 +171,7 @@
         return r.json();
       }).catch(e => { throw e && e.name === "AbortError" ? { code: "cancelled", message: "Cancelled", text: all || undefined } : e; });
 
+      for (const k in usage) usage[k] += (last.usage && last.usage[k]) || 0;
       const txt = textOf(last.content);
       if (txt) { all += sep + txt; if (opts.onText && !roundText) opts.onText({ text: all, delta: txt }); }
       const calls = (last.content || []).filter(b => b.type === "tool_use");
@@ -187,7 +189,8 @@
       messages.push({ role: "user", content: results });
     }
     if (!all.trim()) throw { code: "empty_completion", message: "Empty answer" };
-    return { text: all, truncated: last.stop_reason === "max_tokens", modelTierApplied: tier, usage: last.usage };
+    sample.lastUsage = usage;
+    return { text: all, truncated: last.stop_reason === "max_tokens", modelTierApplied: tier, usage };
   }
   sample.json = async (input, opts) => {
     const msgs = toMessages(input);
@@ -861,7 +864,7 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 
 <div class="shell" id="shell">
   <aside class="side" id="side">
-    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v 07fa773 · 01.11.2026 16:34</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
+    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v a67cd20 · 01.11.2026 16:39</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
     <button class="newchat" id="newChat">＋ <span data-t="newChat">New chat</span></button>
     <nav class="nav" id="nav"></nav>
     <div class="nav"><div class="grp" data-t="recent">Recent chats</div></div>
@@ -1041,13 +1044,16 @@ async function addOpen(q, reason){
   }catch{}
 }
 const PRICE={quick:[0.10,0.50,"Haiku 5.5"],default:[2,10,"Sonnet 5.5"],complex:[4,20,"Opus 5.5"]};
-const costOf=q=>{ const p=PRICE[q.tier||"default"]||PRICE.default; return (q.inChars||0)/4/1e6*p[0]+(q.outChars||0)/4/1e6*p[1]; };
+const costOf=q=>{ const p=PRICE[q.tier||"default"]||PRICE.default; const u=q.tok;
+  if(u) return ((u.in||0)*p[0]+(u.cw||0)*p[0]*1.25+(u.cr||0)*p[0]*0.1+(u.out||0)*p[1])/1e6;
+  return (q.inChars||0)/4/1e6*p[0]+(q.outChars||0)/4/1e6*p[1]; };
+const tokOf=u=>u?{in:u.input_tokens||0,cw:u.cache_creation_input_tokens||0,cr:u.cache_read_input_tokens||0,out:u.output_tokens||0}:null;
 const isChatQ=q=>!q.task||q.task==="chat";
 async function ai(task,input,opts={},json=false){
   const t0=Date.now(), tier=opts.modelTier||"default";
   const r=json?await sample.json(input,opts):await sample(input,opts);
-  const out=json?JSON.stringify(r):r.text;
-  logQ({task,lang,tier:(!json&&r.modelTierApplied)||tier,inChars:JSON.stringify(input).length,outChars:(out||"").length,ms:Date.now()-t0});
+  const out=json?JSON.stringify(r):r.text; const tok=tokOf(json?sample.lastUsage:r.usage);
+  logQ({task,lang,tier:(!json&&r.modelTierApplied)||tier,inChars:JSON.stringify(input).length,outChars:(out||"").length,ms:Date.now()-t0,...(tok?{tok}:{})});
   return r;
 }
 async function logQ(entry){ if(!db) return; try{ await db.collection("qlog").add({ts:Date.now(),day:today(),...entry}); }catch{} }
@@ -1591,14 +1597,14 @@ async function ask(q){
   if(toolsOK) opts.tools=TOOLS(); else opts.cache=false;
   const t0=Date.now();
   try{
-    const {text,truncated,modelTierApplied}=await sample(input,opts);
+    const {text,truncated,modelTierApplied,usage}=await sample(input,opts);
     const m=splitMeta(text); ans.innerHTML=md(m.clean);
     const meta={status:m.status,products:[...new Set([...m.products.filter(h=>byH[h]),...acc.used])].slice(0,8)};
     chat.turns.push({role:"assistant",content:m.clean}); chat.meta.push(meta);
     finishBot(d,m.clean,meta);
     if(truncated) setStatus("Cut short. Ask for less at once.");
     const inChars=JSON.stringify(input).length*(toolsOK?2:1)+acc.tool, outChars=text.length;
-    logQ({task:"chat",tier:modelTierApplied||"default",q:q.slice(0,300),lang,status:m.status,products:meta.products,inChars,outChars,ms:Date.now()-t0,mode:toolsOK?"tools":"inline"});
+    logQ({task:"chat",tier:modelTierApplied||"default",q:q.slice(0,300),lang,status:m.status,products:meta.products,inChars,outChars,ms:Date.now()-t0,mode:toolsOK?"tools":"inline",...(tokOf(usage)?{tok:tokOf(usage)}:{})});
     if(m.status==="unanswered"||m.status==="partial") addOpen(q,m.status);
     saveChat();
   }catch(e){
@@ -2714,7 +2720,7 @@ function viewStats(v){
     <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-family:var(--display);font-size:18px;flex:1">${esc(t("report"))}</b>
       <select id="rp_m" class="field" style="max-width:180px">${months().map(m=>`<option ${m===rp.m?"selected":""}>${m}</option>`).join("")}</select><button class="btn primary" id="rp_go" ${rp.busy||!sample?"disabled":""}>${esc(t("makeReport"))}</button>${rp.text?`<button class="btn" id="rp_cp">${esc(t("copy"))}</button>`:""}</div>
       <div class="note">${esc(t("reportSub"))}</div>${rp.busy?`<div class="thinking">${esc(t("thinking"))}</div>`:""}${rp.text?`<div class="answer">${md(rp.text)}</div>`:""}</div>
-    <p class="note">${lang==="de"?"Kosten geschätzt aus Textlänge (≈ 4 Zeichen pro Token), Listenpreise Okt 2026. Die echte API-Version zeigt exakte Werte.":"Costs estimated from text length (≈ 4 characters per token) at Oct 2026 list prices. The API version will show exact numbers."}</p></div>`;
+    <p class="note">${lang==="de"?"Kosten aus den echten Token-Zahlen der Claude API inkl. Caching (Listenpreise Okt 2026). Einträge ohne Token-Zahlen (ältere oder aus der Claude-Vorschau) sind aus der Textlänge geschätzt und eher zu hoch.":"Costs from the Claude API's real token counts incl. caching (Oct 2026 list prices). Entries without token counts (older ones or from the Claude preview) are estimated from text length and tend to be too high."}</p></div>`;
 }
 
 let rp={m:new Date().toISOString().slice(0,7),text:"",busy:false};

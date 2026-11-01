@@ -13,7 +13,7 @@
       "binding": "DB",
       "database_name": "partbase",
       // Paste the id printed by: npx wrangler d1 create partbase
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_id": "e26184a0-a83c-49f3-9762-9eeaf75bcf9c"
     }
   ],
   "vars": {

@@ -658,6 +658,10 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 .bdg2.cert{background:var(--panel)}
 @media (max-width:900px){.amods2{grid-template-columns:minmax(0,1fr)}.badges2{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* training pages: setup vs play */
+.factnote{align-self:center;max-width:90%;font-size:13px;line-height:1.45;padding:8px 12px;border-radius:12px;background:#fdf1e7;color:#7a3b12;border:1px solid #f3d3b8}
+.factnote b{margin-right:4px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .factnote{background:#3a2516;color:#f3c9a6;border-color:#5a3820}}
+:root[data-theme="dark"] .factnote{background:#3a2516;color:#f3c9a6;border-color:#5a3820}
 .lvl{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:4px}
 .lvl i{width:7px;height:7px;border-radius:50%;background:var(--line);display:inline-block}
 .lvl i:last-of-type{margin-right:5px}
@@ -1837,7 +1841,7 @@ function viewPractice(v){
       <div class="card"><h3>${esc(t("recommended"))}</h3><div class="chips">${(f.recommended||[]).filter(h=>byH[h]).map(h=>`<button class="chip" data-h="${esc(h)}">${esc(byH[h].t)}</button>`).join("")}</div></div></div>`;
   }
   v.innerHTML=`<div class="wrap" style="max-width:820px"><div class="vhead">${lvlPill(scenLvl(s))}<h1>${esc(s[lang][0])}</h1><p>${esc(s[lang][1])}</p></div>
-    <div class="pchat" id="pchat">${pr.turns.map(x=>`<div class="bubble ${x.role==="assistant"?"cust":"me"}">${esc(x.content)}</div>`).join("")}${pr.busy?`<div class="bubble cust thinking">${esc(t("thinking"))}</div>`:""}</div>
+    <div class="pchat" id="pchat">${pr.turns.map(x=>x.role==="note"?`<div class="factnote"><b>${tx("Fact check","Faktencheck")}</b> ${esc(x.content)}</div>`:`<div class="bubble ${x.role==="assistant"?"cust":"me"}">${esc(x.content)}</div>`).join("")}${pr.busy?`<div class="bubble cust thinking">${esc(t("thinking"))}</div>`:""}</div>
     ${pr.fb?fb:`<form class="composer" id="pform" style="padding:0"><div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px"><textarea id="pq" rows="2" class="field" style="border:0;padding:0;resize:vertical" placeholder="${esc(t("yourReply"))}"></textarea>
       <div class="chips" style="justify-content:flex-end"><button type="button" class="btn" id="pfin" ${pr.turns.length<3||pr.busy?"disabled":""}>${esc(t("finish"))}</button><button class="btn primary" ${pr.busy?"disabled":""}>${tx("Send","Senden")} ↑</button></div></div></form>`}
     <button class="back" id="pre">← ${esc(t("restart"))}</button></div>`;
@@ -1852,14 +1856,21 @@ async function customerTurn(){
   const tone=TONES[(LVLS[scenLvl(s)]||LVLS[2])[0]];
   const opening=s.kind==="obj"?`Start with a short greeting and raise your objection in your own words (meaning: "${s.objText}").`:"Start by greeting and stating what you're looking for, vaguely, like a real customer would.";
   const sys=`Role-play for sales training. You are a CUSTOMER in a bike shop, not an assistant. Situation: ${s.en[1]} Personality: ${tone.p} Speak ${lang==="de"?"German, casual and natural":"English, casual and natural"}. Keep each reply to 1-3 short sentences. Reveal details only when asked (body height, budget, use, luggage). Ask realistic questions and react to the advice you get. Never give advice yourself and never mention you are an AI. ${pr.turns.length?"Continue the conversation."+(s.kind==="obj"?" Only let go of your objection when the staff member gives specific, convincing arguments with real facts; otherwise push back or raise a related doubt.":""):opening}`;
-  const input=[{role:"user",content:sys}, ...pr.turns.map(x=>({role:x.role==="assistant"?"user":"user",content:(x.role==="assistant"?"(You, the customer, said:) ":"(Shop staff says:) ")+x.content})), {role:"user",content:"Your next line as the customer:"}];
-  try{ const {text}=await ai("practiceCustomer",input,{modelTier:"quick",cache:false}); pr.turns.push({role:"assistant",content:text.trim()}); }
+  // Facts the customer may know (looked up online), so clearly wrong claims by the staff get challenged.
+  const talk=pr.turns.filter(x=>x.role!=="note"), lastStaff=[...talk].reverse().find(x=>x.role==="user");
+  const facts=[...new Set([...(s.h&&byH[s.h]?[byH[s.h]]:[]),...mentioned((lastStaff?lastStaff.content:"")+" "+talk.map(x=>x.content).join(" ")+" "+s.en[1])])].slice(0,4);
+  const lvl=scenLvl(s), react=lvl===1?"politely wonder about it and ask whether that is right":lvl===2?"ask back and say what you read instead":"challenge it directly and firmly, you clearly read something else";
+  const factBlock=facts.length&&lastStaff?`\n\nFACTS you looked up online before coming in (Bombtrack's own data):\n${facts.map(p=>prodText(p,"en").slice(0,2500)).join("\n")}\n\nIf the staff member's LAST message states something that clearly contradicts these facts or is unrealistic for a bike (for example a complete bike weighing 5 kg, a feature it does not have, a wrong size range, a tyre that does not fit), ${react}. In that case, and only then, add one final line exactly like <<check: one short sentence in ${lang==="de"?"German":"English"} with the correct value from the facts>>. Never add that line otherwise.`:"";
+  const input=[{role:"user",content:sys+factBlock}, ...talk.map(x=>({role:"user",content:(x.role==="assistant"?"(You, the customer, said:) ":"(Shop staff says:) ")+x.content})), {role:"user",content:"Your next line as the customer:"}];
+  try{ const {text}=await ai("practiceCustomer",input,{modelTier:"quick",cache:false});
+    const m=text.match(/<<\s*check:\s*([^>]*)>>/i); const clean=text.replace(/<<[\s\S]*?>>/g,"").trim();
+    pr.turns.push({role:"assistant",content:clean||"…"}); if(m&&m[1].trim()) pr.turns.push({role:"note",content:m[1].trim()}); }
   catch(e){ pr.turns.push({role:"assistant",content:ERR[e.code]||"…"}); }
   pr.busy=false; if(route.v==="practice") render();
 }
 async function feedback(){
   const s=pr.sc; pr.busy=true; render();
-  const transcript=pr.turns.map(x=>(x.role==="assistant"?"CUSTOMER: ":"STAFF: ")+x.content).join("\n");
+  const transcript=pr.turns.map(x=>(x.role==="note"?"FACT CHECK (staff said something wrong): ":x.role==="assistant"?"CUSTOMER: ":"STAFF: ")+x.content).join("\n");
   const ment=[...new Set([...mentioned(transcript),...searchProducts(s.en[1],"bike",4)])].slice(0,8);
   const prompt=`You are a senior Bombtrack sales trainer. Evaluate how the STAFF member ${s.kind==="obj"?"handled the customer's objection (empathy, specific facts, honesty, did the customer end up reassured)":"advised this customer"}. Base every factual point ONLY on the Bombtrack data below; never invent specs. Write in ${lang==="de"?"German, using Bombtrack's German terms":"English"}, no em-dashes.
 

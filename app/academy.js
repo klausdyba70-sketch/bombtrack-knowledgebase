@@ -437,7 +437,7 @@ function bindTone() { const el = $("#prTone"); if (el) el.onclick = e => { const
 function startObjTalk(id) {
   const o = OBJSCEN.find(x => x.id === id); const p = byH[o.h];
   const L2 = lang === "de" ? o.de : o.en;
-  pr = { sc: { id: o.id, kind: "obj", lvl: o.lvl || 2, objText: L2[2], en: [o.en[0], `${o.en[1]} The customer's doubt about the ${p ? p.t : ""}: "${o.en[2]}"`], de: [o.de[0], `${o.de[1]} Einwand: „${o.de[2]}“`] }, turns: [], fb: null, busy: false };
+  pr = { sc: { id: o.id, kind: "obj", h: o.h, lvl: o.lvl || 2, objText: L2[2], en: [o.en[0], `${o.en[1]} The customer's doubt about the ${p ? p.t : ""}: "${o.en[2]}"`], de: [o.de[0], `${o.de[1]} Einwand: „${o.de[2]}“`] }, turns: [], fb: null, busy: false };
   render(); customerTurn();
 }
 function renderTrainTabs() { return `<div class="chips" id="trTabs">${[["conv", tx("General advice", "Allgemeine Beratung")], ["obj", tx("Objections", "Einwände")], ["pitch", tx("30-second pitch", "30-Sekunden-Pitch")]].map(([k, l]) => `<button class="chip" data-m="${k}" aria-pressed="${ob.mode === k}">${esc(l)}</button>`).join("")}</div>`; }

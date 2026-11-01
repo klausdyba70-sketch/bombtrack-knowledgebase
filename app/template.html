@@ -1357,7 +1357,7 @@ function fallbackContext(q){
   const docs=searchDocs(q,2);
   return "\n\nRELEVANT PRODUCT DATA:\n"+hit.map(p=>prodText(p,lang)).join("\n")+(docs.length?"\n\nRELEVANT DOCUMENT PAGES:\n"+docs.map(c=>`--- ${docLabel(c)}, page ${c.p} ---\n${c.t}`).join("\n\n"):"");
 }
-const ERR={not_granted:"Claude access wasn't allowed for this page, so chat is off.",sampling_disabled:"Claude isn't available for this account, so chat is off.",rate_limited:"Too many questions at once. Wait a moment, then ask again.",session_expired:"Your session expired. Sign in again.",prompt_too_large:"This chat got too long. Start a new chat.",refused:"Claude declined that question. Try rephrasing it."};
+const ERR={credits:"The AI budget for this app is used up. Please tell your admin.",overloaded:"Claude is very busy right now. Please ask again in a moment.",not_granted:"Claude access wasn't allowed for this page, so chat is off.",sampling_disabled:"Claude isn't available for this account, so chat is off.",rate_limited:"Too many questions at once. Wait a moment, then ask again.",session_expired:"Your session expired. Sign in again.",prompt_too_large:"This chat got too long. Start a new chat.",refused:"Claude declined that question. Try rephrasing it."};
 function splitMeta(text){
   const m=text.match(/<<\s*status:\s*(\w+)\s*;\s*products:\s*([^>]*)>>\s*$/i);
   const clean=text.replace(/<<[\s\S]*$/,"").trimEnd();

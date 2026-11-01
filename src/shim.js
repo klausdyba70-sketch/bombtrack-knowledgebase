@@ -111,30 +111,67 @@
   };
   const textOf = (content) => (content || []).filter(b => b.type === "text").map(b => b.text).join("");
 
+  /* Reads the Claude API event stream and returns {content, stop_reason, usage}, calling onDelta for each text piece. */
+  async function readStream(resp, onDelta) {
+    const reader = resp.body.getReader(), dec = new TextDecoder();
+    const blocks = [], usage = {}; let stop = null, buf = "";
+    const handle = (ev) => {
+      if (ev.type === "message_start") Object.assign(usage, ev.message && ev.message.usage || {});
+      else if (ev.type === "content_block_start") { const cb = ev.content_block || {}; blocks[ev.index] = cb.type === "tool_use" ? { type: "tool_use", id: cb.id, name: cb.name, _json: "" } : cb.type === "text" ? { type: "text", text: "" } : { ...cb }; }
+      else if (ev.type === "content_block_delta") {
+        const blk = blocks[ev.index], d = ev.delta || {};
+        if (!blk) return;
+        if (d.type === "text_delta") { blk.text += d.text; onDelta(d.text); }
+        else if (d.type === "input_json_delta") blk._json += d.partial_json || "";
+      }
+      else if (ev.type === "content_block_stop") { const blk = blocks[ev.index]; if (blk && blk.type === "tool_use") { try { blk.input = blk._json ? JSON.parse(blk._json) : {}; } catch { blk.input = {}; } delete blk._json; } }
+      else if (ev.type === "message_delta") { stop = ev.delta && ev.delta.stop_reason || stop; Object.assign(usage, ev.usage || {}); }
+      else if (ev.type === "error") throw { code: (ev.error && ev.error.type) === "overloaded_error" ? "overloaded" : "error", message: ev.error && ev.error.message || "Stream error" };
+    };
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf("\n\n")) >= 0) {
+        const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+        const data = chunk.split("\n").filter(l => l.startsWith("data:")).map(l => l.slice(5).trim()).join("");
+        if (data) handle(JSON.parse(data));
+      }
+    }
+    return { content: blocks.filter(Boolean), stop_reason: stop, usage };
+  }
+
   async function sample(input, opts) {
     opts = opts || {};
     const tier = opts.modelTier && opts.modelTier !== "inherit" ? opts.modelTier : "default";
     const tools = opts.tools || [];
-    const messages = toMessages(input);
+    // The app sends its long instructions as the first user turn; send them as a cached system prompt instead.
+    let system = null, src = input;
+    if (Array.isArray(input) && input.length > 1 && input[0].role === "user" && input[1].role === "user") { system = String(input[0].content); src = input.slice(1); }
+    const messages = toMessages(src);
     let rounds = 0, all = "", last = null;
     while (true) {
       if (opts.signal && opts.signal.aborted) throw { code: "cancelled", message: "Cancelled" };
+      const sep = all ? "\n\n" : ""; let roundText = "";
       last = await fetch("/api/chat", {
         method: "POST", credentials: "same-origin", signal: opts.signal,
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          tier, messages,
+          tier, messages, system, stream: true, round: rounds,
           tools: tools.map(t => ({ name: t.name, description: t.description || "", input_schema: t.inputSchema || { type: "object", properties: {} } })),
         })
       }).then(async r => {
         if (r.status === 401) { location.reload(); throw { code: "session_expired", message: "Please log in again." }; }
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw { code: j.code || "error", message: j.message || ("HTTP " + r.status), text: all || undefined };
-        return j;
-      }, e => { throw e && e.name === "AbortError" ? { code: "cancelled", message: "Cancelled", text: all || undefined } : e; });
+        if (!r.ok) { const j = await r.json().catch(() => ({})); throw { code: j.code || "error", message: j.message || ("HTTP " + r.status), text: all || undefined }; }
+        if ((r.headers.get("content-type") || "").includes("text/event-stream")) {
+          return readStream(r, (d) => { roundText += d; if (opts.onText) opts.onText({ text: all + (roundText ? sep : "") + roundText, delta: d }); });
+        }
+        return r.json();
+      }).catch(e => { throw e && e.name === "AbortError" ? { code: "cancelled", message: "Cancelled", text: all || undefined } : e; });
 
       const txt = textOf(last.content);
-      if (txt) { all += (all ? "\n\n" : "") + txt; if (opts.onText) opts.onText({ text: all, delta: txt }); }
+      if (txt) { all += sep + txt; if (opts.onText && !roundText) opts.onText({ text: all, delta: txt }); }
       const calls = (last.content || []).filter(b => b.type === "tool_use");
       if (last.stop_reason !== "tool_use" || !calls.length || ++rounds > 8) break;
 

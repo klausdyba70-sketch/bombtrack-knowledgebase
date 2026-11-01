@@ -94,25 +94,39 @@ async function same(a, b, env) {
 /* ---------------- Claude ---------------- */
 async function chat(req, env, s) {
   if (!env.ANTHROPIC_API_KEY) return json({ code: "sampling_disabled", message: "No API key configured" }, 503);
+  const b = await req.json();
   const limit = Number(env.CHAT_LIMIT_PER_HOUR || 120);
   const hour = Math.floor(Date.now() / 36e5);
-  const row = await env.DB.prepare("INSERT INTO usage(uid,hour,n) VALUES(?1,?2,1) ON CONFLICT(uid,hour) DO UPDATE SET n=n+1 RETURNING n").bind(s.uid, hour).first();
-  if (row && row.n > limit) return json({ code: "rate_limited", message: "Too many questions this hour" }, 429);
+  if (!b.round) {   // count questions, not the tool rounds inside one answer
+    const row = await env.DB.prepare("INSERT INTO usage(uid,hour,n) VALUES(?1,?2,1) ON CONFLICT(uid,hour) DO UPDATE SET n=n+1 RETURNING n").bind(s.uid, hour).first();
+    if (row && row.n > limit) return json({ code: "rate_limited", message: "Too many questions this hour" }, 429);
+  } else if (b.round > 10) return json({ code: "error", message: "Too many tool rounds" }, 400);
 
-  const b = await req.json();
   const model = (env["MODEL_" + String(b.tier || "default").toUpperCase()]) || MODELS[b.tier] || MODELS.default;
-  const body = { model, max_tokens: Number(env.MAX_TOKENS || 2048), messages: b.messages };
+  const messages = (b.messages || []).map(m => ({ role: m.role, content: m.content }));
+  const body = { model, max_tokens: Number(env.MAX_TOKENS || 2048), messages, stream: !!b.stream };
+  // Prompt caching: the long instructions + catalogue go into `system` and are cached (faster, ~90% cheaper on repeat).
+  if (b.system) body.system = [{ type: "text", text: String(b.system), cache_control: { type: "ephemeral" } }];
   if (Array.isArray(b.tools) && b.tools.length) body.tools = b.tools;
+  // Also cache the conversation so far, so tool rounds and follow-up questions reuse it.
+  const last = messages[messages.length - 1];
+  if (last) {
+    if (typeof last.content === "string") last.content = [{ type: "text", text: last.content }];
+    if (Array.isArray(last.content) && last.content.length) last.content[last.content.length - 1] = { ...last.content[last.content.length - 1], cache_control: { type: "ephemeral" } };
+  }
   const r = await fetch((env.ANTHROPIC_BASE_URL || "https://api.anthropic.com") + "/v1/messages", {
     method: "POST",
     headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify(body)
   });
-  const j = await r.json();
   if (!r.ok) {
-    const code = r.status === 429 ? "rate_limited" : r.status === 413 ? "prompt_too_large" : "error";
-    return json({ code, message: j.error && j.error.message || "Claude API error" }, r.status === 429 ? 429 : 502);
+    const j = await r.json().catch(() => ({}));
+    const msg = j.error && j.error.message || "Claude API error";
+    const code = /credit balance/i.test(msg) ? "credits" : r.status === 429 ? "rate_limited" : r.status === 413 ? "prompt_too_large" : r.status === 529 ? "overloaded" : "error";
+    return json({ code, message: msg }, r.status === 429 ? 429 : 502);
   }
+  if (body.stream) return new Response(r.body, { headers: { "content-type": "text/event-stream", "cache-control": "no-store" } });
+  const j = await r.json();
   return json({ content: j.content, stop_reason: j.stop_reason, usage: j.usage, model: j.model });
 }
 

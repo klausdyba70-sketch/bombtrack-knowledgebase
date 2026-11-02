@@ -128,6 +128,8 @@
         if (!blk) return;
         if (d.type === "text_delta") { blk.text += d.text; onDelta(d.text); }
         else if (d.type === "input_json_delta") blk._json += d.partial_json || "";
+        else if (d.type === "thinking_delta") blk.thinking = (blk.thinking || "") + (d.thinking || "");
+        else if (d.type === "signature_delta") blk.signature = (blk.signature || "") + (d.signature || "");
       }
       else if (ev.type === "content_block_stop") { const blk = blocks[ev.index]; if (blk && blk.type === "tool_use") { try { blk.input = blk._json ? JSON.parse(blk._json) : {}; } catch { blk.input = {}; } delete blk._json; } }
       else if (ev.type === "message_delta") { stop = ev.delta && ev.delta.stop_reason || stop; Object.assign(usage, ev.usage || {}); }
@@ -182,7 +184,7 @@
       const calls = (last.content || []).filter(b => b.type === "tool_use");
       if (last.stop_reason !== "tool_use" || !calls.length || ++rounds > 8) break;
 
-      messages.push({ role: "assistant", content: last.content });
+      messages.push({ role: "assistant", content: (last.content || []).filter(b => b.type !== "thinking" || b.signature).map(b => b.type === "thinking" ? { type: "thinking", thinking: b.thinking || "", signature: b.signature } : b) });
       const results = [];
       for (const c of calls) {
         const tool = tools.find(t => t.name === c.name);

@@ -660,6 +660,11 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 .medal.on{color:var(--lime-ink)}.medal.on .ico{background:var(--lime)}
 .bdg2.cert{background:var(--panel)}
 @media (max-width:900px){.amods2{grid-template-columns:minmax(0,1fr)}.badges2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* chat error inside the answer */
+.answer .errnote{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;padding:12px 14px;border-radius:12px;background:#fbeceb;color:#8f2a20;font-size:15px}
+:root[data-theme="dark"] .answer .errnote{background:#3a2423;color:#f3b3ab}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .answer .errnote{background:#3a2423;color:#f3b3ab}}
+.answer .errnote .note{font-size:12px;opacity:.75}
 /* universal section (folded) */
 .answer .univ{margin-top:10px;padding:10px 14px;border-left:3px solid var(--lime);background:var(--panel);border-radius:0 10px 10px 0}
 .answer .univh{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
@@ -1473,7 +1478,9 @@ function fallbackContext(q){
   const docs=searchDocs(q,2);
   return "\n\nRELEVANT PRODUCT DATA:\n"+hit.map(p=>prodText(p,lang)).join("\n")+(docs.length?"\n\nRELEVANT DOCUMENT PAGES:\n"+docs.map(c=>`--- ${docLabel(c)}, page ${c.p} ---\n${c.t}`).join("\n\n"):"");
 }
-const ERR={credits:"The AI budget for this app is used up. Please tell your admin.",overloaded:"Claude is very busy right now. Please ask again in a moment.",not_granted:"Claude access wasn't allowed for this page, so chat is off.",sampling_disabled:"Claude isn't available for this account, so chat is off.",rate_limited:"Too many questions at once. Wait a moment, then ask again.",session_expired:"Your session expired. Sign in again.",prompt_too_large:"This chat got too long. Start a new chat.",refused:"Claude declined that question. Try rephrasing it."};
+const ERR_EN={credits:"The AI budget for this app is used up. Please tell your admin.",overloaded:"Claude is very busy right now. Please ask again in a moment.",not_granted:"Claude access wasn't allowed for this page, so chat is off.",sampling_disabled:"Claude isn't available for this account, so chat is off.",rate_limited:"Too many questions at once. Wait a moment, then ask again.",session_expired:"Your session expired. Sign in again.",prompt_too_large:"This chat got too long. Start a new chat.",refused:"Claude declined that question. Try rephrasing it.",timeout:"No answer from Claude for too long. Please ask again.",error:"Something went wrong reaching Claude. Please ask again."};
+const ERR_DE={credits:"Das KI-Budget dieser App ist aufgebraucht. Bitte gib dem Admin Bescheid.",overloaded:"Claude ist gerade stark ausgelastet. Bitte gleich nochmal fragen.",not_granted:"Claude-Zugriff wurde für diese Seite nicht erlaubt, der Chat ist aus.",sampling_disabled:"Claude ist für dieses Konto nicht verfügbar, der Chat ist aus.",rate_limited:"Zu viele Fragen auf einmal. Kurz warten, dann nochmal fragen.",session_expired:"Deine Sitzung ist abgelaufen. Bitte neu anmelden.",prompt_too_large:"Dieser Chat ist zu lang geworden. Starte einen neuen Chat.",refused:"Claude hat die Frage abgelehnt. Versuch es anders zu formulieren.",timeout:"Claude hat zu lange nicht geantwortet. Bitte nochmal fragen.",error:"Claude war nicht erreichbar. Bitte nochmal fragen."};
+const ERR=new Proxy({}, {get:(_,k)=>(lang==="de"?ERR_DE:ERR_EN)[k]});
 const UNIV_RE=/\n\s*(?:\*\*)?\s*(Universell|Universal)\s*:?\s*(?:\*\*)?\s*:?/i;
 function mdAns(text){ const m=UNIV_RE.exec(text); if(!m) return md(text); const rest=text.slice(m.index+m[0].length).replace(/^\s*:?/,"");
   return md(text.slice(0,m.index))+`<div class="univ" hidden><div class="univh">${esc(lang==="de"?"Universell":"Universal")}</div>${md(rest)}</div>`; }
@@ -1494,8 +1501,8 @@ async function ask(q){
   const history=chat.turns.slice(-12);
   let sys=rules(); if(!toolsOK) sys+=fallbackContext(q);
   const input=[{role:"user",content:sys},...history];
-  ctl=new AbortController();
-  const opts={signal:ctl.signal,onText:({text})=>{ans.innerHTML=mdAns(splitMeta(text).clean||"…"); scrollLog();}};
+  ctl=new AbortController(); let timedOut=false, wd=null; const kick=()=>{ clearTimeout(wd); wd=setTimeout(()=>{ timedOut=true; ctl.abort(); },120000); }; kick();
+  const opts={signal:ctl.signal,onText:({text})=>{kick(); ans.innerHTML=mdAns(splitMeta(text).clean||"…"); scrollLog();}};
   if(toolsOK) opts.tools=TOOLS(); else opts.cache=false;
   const t0=Date.now();
   try{
@@ -1511,11 +1518,16 @@ async function ask(q){
     saveChat();
   }catch(e){
     chat.turns.pop(); chat.meta.pop();
-    ans.innerHTML = e.text ? md(splitMeta(e.text).clean) : (e.code==="cancelled"?`<span class="muted">${esc(t("stop"))}</span>`:"");
-    if(e.code!=="cancelled") setStatus(ERR[e.code]||"Something went wrong reaching Claude. Ask again in a moment.");
+    if(timedOut) e={code:"timeout",text:e&&e.text};
+    if(e.code==="cancelled") ans.innerHTML = e.text ? md(splitMeta(e.text).clean) : `<span class="muted">${esc(t("stop"))}</span>`;
+    else {
+      ans.innerHTML = (e.text ? md(splitMeta(e.text).clean) : "")+`<div class="errnote"><span>⚠ ${esc(ERR[e.code]||ERR.error)}</span><span class="note">${esc(e.code||"error")}${e.message&&e.code!=="credits"?" · "+esc(String(e.message).slice(0,120)):""}</span><button class="btn" data-retry>${esc(lang==="de"?"Nochmal fragen":"Ask again")}</button></div>`;
+      const rb=ans.querySelector("[data-retry]"); rb.onclick=()=>{ if(busy) return; d.previousElementSibling?.remove(); d.remove(); ask(q); };
+      setStatus("");
+    }
     if(["not_granted","sampling_disabled","not_declared","capability_disabled"].includes(e.code)) sample=null;
   }finally{
-    busy=false; ctl=null; if($("#send")) $("#send").disabled=false; if($("#stop")) $("#stop").hidden=true; if(!$("#status")?.textContent?.startsWith("Cut")&&!$("#status")?.textContent?.includes("wrong")) setStatus("");
+    clearTimeout(wd); busy=false; ctl=null; if($("#send")) $("#send").disabled=false; if($("#stop")) $("#stop").hidden=true; if(!$("#status")?.textContent?.startsWith("Cut")&&!$("#status")?.textContent?.includes("wrong")) setStatus("");
   }
 }
 

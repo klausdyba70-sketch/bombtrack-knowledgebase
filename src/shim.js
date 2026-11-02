@@ -79,12 +79,17 @@
     return ref;
   }
   function watch(col, fetcher, next, err) {
-    let stopped = false, busy = false;
+    let stopped = false, busy = false, sig = null;
     const l = {
       col,
       run: async () => {
         if (stopped || busy) return; busy = true;
-        try { const s = await fetcher(); if (!stopped) next(s); }
+        try {
+          const s = await fetcher(); if (stopped) return;
+          // only notify when the data actually changed, otherwise every poll re-renders the app (wipes typing and running chat answers)
+          let k; try { k = JSON.stringify(s && s.docs ? s.docs.map(d => [d.id, d.data()]) : [s && s.exists, s && s.data && s.data()]); } catch { k = Math.random(); }
+          if (k === sig) return; sig = k; next(s);
+        }
         catch (e) { if (err) err(e); }
         finally { busy = false; }
       }

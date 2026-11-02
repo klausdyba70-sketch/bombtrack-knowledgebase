@@ -79,12 +79,17 @@
     return ref;
   }
   function watch(col, fetcher, next, err) {
-    let stopped = false, busy = false;
+    let stopped = false, busy = false, sig = null;
     const l = {
       col,
       run: async () => {
         if (stopped || busy) return; busy = true;
-        try { const s = await fetcher(); if (!stopped) next(s); }
+        try {
+          const s = await fetcher(); if (stopped) return;
+          // only notify when the data actually changed, otherwise every poll re-renders the app (wipes typing and running chat answers)
+          let k; try { k = JSON.stringify(s && s.docs ? s.docs.map(d => [d.id, d.data()]) : [s && s.exists, s && s.data && s.data()]); } catch { k = Math.random(); }
+          if (k === sig) return; sig = k; next(s);
+        }
         catch (e) { if (err) err(e); }
         finally { busy = false; }
       }
@@ -928,7 +933,7 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 
 <div class="shell" id="shell">
   <aside class="side" id="side">
-    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v 2a369ea · 02.11.2026 18:40</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
+    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v b78c7d8 · 02.11.2026 20:47</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
     <button class="newchat" id="newChat">＋ <span data-t="newChat">New chat</span></button>
     <nav class="nav" id="nav"></nav>
     <div class="nav"><div class="grp" data-t="recent">Recent chats</div></div>
@@ -1160,8 +1165,8 @@ function addCrumbs(v){
     else if(a.startsWith("year:")){ pf={...pf,year:a.slice(5),fam:null}; go("products"); } else go(a); };
 }
 function setLang(l){ if(l===lang) return; lang=l; try{localStorage.setItem("bt_lang",lang)}catch{} render(); }
-let backRoute=null;
-function go(v, extra={}){ const isA=x=>ADMIN.some(a=>a[0]===x); if(isA(v)&&!isA(route.v)) backRoute={...route}; route={v,...extra}; $("#shell").classList.remove("open"); render(); $("#view").scrollTop=0; }
+let backRoute=null, navRender=false;
+function go(v, extra={}){ const isA=x=>ADMIN.some(a=>a[0]===x); if(isA(v)&&!isA(route.v)) backRoute={...route}; route={v,...extra}; $("#shell").classList.remove("open"); navRender=true; try{ render(); } finally { navRender=false; } $("#view").scrollTop=0; }
 function renderNav(){
   const openN = OPEN.filter(o=>o.status!=="answered").length;
   $("#nav").innerHTML = NAV.filter(n=>!n.team||isTeam).map(n=> n.grp ? `<div class="grp">${esc(t(n.grp))}</div>` :
@@ -1218,10 +1223,14 @@ applyTheme();
 function render(){
   renderNav(); renderHist(); renderBot();
   const v=$("#view");
+  // keep a streaming chat answer and the typed draft alive when data updates trigger a re-render
+  if(route.v==="chat"&&busy&&$("#col")&&!navRender) return;
+  const draft=route.v==="chat"&&$("#q")?$("#q").value:null;
   const map={academy:viewAcademy,styles:viewStyles,range:viewRange,quiz:viewQuiz,stylequiz:viewStyleTest,cards:viewCards,settings:viewSettings,history:viewHistory,all:viewAll,size:viewSize,gearing:viewGearing,tires:viewTires,spokes:viewSpokes,docs:viewDocs,chat:viewChat,products:viewProducts,product:viewProduct,compare:viewCompare,geometry:viewGeometry,practice:viewPractice,glossary:viewGlossary,open:viewOpen,stats:viewStats,cases:viewCases,anatomy:viewAnatomy,content:viewContent,archive:viewArchive};
   stopTour(); stopTyper();
   if(ADMIN.some(a=>a[0]===route.v&&a[0]!=="settings")&&!isTeam){ route={v:"settings"}; }
   (map[route.v]||viewChat)(v);
+  if(draft&&$("#q")&&!$("#q").value){ $("#q").value=draft; }
   addCrumbs(v);
   if(inBK(route.v)){ const w=v.querySelector(".wrap"); if(w){ w.insertAdjacentHTML("afterbegin",`<nav class="atabs">${BIKEKNOW.map(([r,k])=>`<button data-v="${r}" ${route.v===r?'aria-current="page"':""}>${esc(t(k))}</button>`).join("")}</nav>`); w.querySelector(".atabs").onclick=e=>{const b=e.target.closest("[data-v]"); if(b) go(b.dataset.v);}; } }
   if(ADMIN.some(a=>a[0]===route.v)){ const w=v.querySelector(".wrap"); if(w){ w.insertAdjacentHTML("afterbegin",`<div class="setxrow"><button class="setx" id="setX">✕ ${esc(lang==="de"?"Schließen":"Close")}</button></div>`); $("#setX").onclick=closeSettings; } }

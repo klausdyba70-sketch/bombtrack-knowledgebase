@@ -660,6 +660,9 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 .medal.on{color:var(--lime-ink)}.medal.on .ico{background:var(--lime)}
 .bdg2.cert{background:var(--panel)}
 @media (max-width:900px){.amods2{grid-template-columns:minmax(0,1fr)}.badges2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* universal section (folded) */
+.answer .univ{margin-top:10px;padding:10px 14px;border-left:3px solid var(--lime);background:var(--panel);border-radius:0 10px 10px 0}
+.answer .univh{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 /* inline links in chat answers */
 .answer .ilink,.answer .gtip{all:unset;cursor:pointer;color:inherit;font-weight:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .answer .ilink{text-decoration-color:var(--lime-deep)}
@@ -1357,7 +1360,7 @@ function addUser(text){ $(".hello")?.remove(); $(".chatview")?.classList.remove(
 function addBot(text, meta){
   $(".hello")?.remove();
   const d=document.createElement("div"); d.className="msg a";
-  d.innerHTML=`<div class="who">Bombtrack</div><div class="answer">${text?md(text):`<span class="thinking">${esc(t("thinking"))}</span>`}</div><div class="srcs"></div><div class="acts" hidden><button data-a="copy">⧉ ${esc(t("copy"))}</button><button data-a="more">↧ <span class="ml">${esc(lang==="de"?"Ausführlicher":"More detail")}</span></button><button data-a="down">👎 ${esc(t("notHelpful"))}</button><span class="flag"></span></div>`;
+  d.innerHTML=`<div class="who">Bombtrack</div><div class="answer">${text?mdAns(text):`<span class="thinking">${esc(t("thinking"))}</span>`}</div><div class="srcs"></div><div class="acts" hidden><button data-a="copy">⧉ ${esc(t("copy"))}</button><button data-a="more">↧ <span class="ml">${esc(lang==="de"?"Ausführlicher":"More detail")}</span></button><button data-a="down">👎 ${esc(t("notHelpful"))}</button><span class="flag"></span></div>`;
   $("#col").append(d); if(text) finishBot(d, text, meta); scrollLog(); return d;
 }
 const PARTRE=/\bBT-[A-Z]{1,4}(?:-[A-Z])?-\d{2,4}\b/g;
@@ -1392,10 +1395,11 @@ function finishBot(d, text, meta){
   d.querySelector(".srcs").onclick=e=>{const b=e.target.closest("button[data-h]"); if(b) go("product",{h:b.dataset.h});};
   const a=d.querySelector(".acts"); a.hidden=false;
   const isPart=/^\s*(Original|Originally fitted)\s*:/i.test(text); d.dataset.part=isPart?"1":"";
-  const ml=a.querySelector(".ml"); if(ml&&isPart) ml.textContent=lang==="de"?"Universell passende Teile":"Universal fit parts";
+  const ml=a.querySelector(".ml"); if(ml&&(isPart||d.querySelector(".univ"))) ml.textContent=lang==="de"?"Universell passende Teile":"Universal fit parts";
   if(meta?.status&&meta.status!=="answered"&&meta.status!=="offtopic") a.querySelector(".flag").textContent=t("flagged");
   a.onclick=async e=>{const b=e.target.closest("button[data-a]"); if(!b) return;
-    if(b.dataset.a==="more"){ if(busy) return; const lq=chat.turns.filter(x=>x.role==="user").at(-1)?.content||""; const de=/[äöüß]|\b(der|die|das|und|ist|welche[srn]?|passt|ich|mit|für|wie|gibt|bei|ein|eine|kann)\b/i.test(lq)||(!lq&&lang==="de"); b.remove(); const part=d.dataset.part==="1"; ask(part?(de?"Welche Teile passen universell? Zeig die Standards, damit auch andere Teile passen.":"Which parts fit universally? Show the standards so other parts fit too."):(de?"Bitte ausführlicher: erkläre die Details, Abkürzungen und worauf man achten muss.":"Please give more detail: explain the details, abbreviations and what to look out for.")); return; }
+    if(b.dataset.a==="more"){ const u=d.querySelector(".univ"); if(u){ u.hidden=!u.hidden; b.querySelector(".ml").textContent=u.hidden?(lang==="de"?"Universell passende Teile":"Universal fit parts"):(lang==="de"?"Universell ausblenden":"Hide universal fit"); b.firstChild.textContent=u.hidden?"↧ ":"↥ "; if(!u.hidden) u.scrollIntoView({block:"nearest",behavior:"smooth"}); return; }
+      if(busy) return; const lq=chat.turns.filter(x=>x.role==="user").at(-1)?.content||""; const de=/[äöüß]|\b(der|die|das|und|ist|welche[srn]?|passt|ich|mit|für|wie|gibt|bei|ein|eine|kann)\b/i.test(lq)||(!lq&&lang==="de"); b.remove(); const part=d.dataset.part==="1"; ask(part?(de?"Welche Teile passen universell? Zeig die Standards, damit auch andere Teile passen.":"Which parts fit universally? Show the standards so other parts fit too."):(de?"Bitte ausführlicher: erkläre die Details, Abkürzungen und worauf man achten muss.":"Please give more detail: explain the details, abbreviations and what to look out for.")); return; }
     if(b.dataset.a==="copy"){ try{await navigator.clipboard.writeText(text); b.textContent="✓ "+t("copied");}catch{} }
     if(b.dataset.a==="down"){ const qi=[...$("#col").children].indexOf(d)-1; const q=chat.turns.filter(x=>x.role==="user").at(-1)?.content||""; const prev=d.previousElementSibling?.textContent||q; await addOpen(prev,"thumbs"); a.querySelector(".flag").textContent=t("flagged"); b.disabled=true; }
   };
@@ -1421,9 +1425,9 @@ STYLE (most important): Answer exactly the question that was asked, like an expe
 MORE DETAIL: When the user asks for a more detailed answer ("ausführlicher", "more detail"), expand the previous answer to about 80 to 160 words: short bullets with what the part or feature is, the exact codes, the standard it follows, how to check it on the bike, and and for parts questions the universal standards as described below. Still no full spec sheet.
 ABBREVIATIONS: Explain technical abbreviations briefly in brackets the first time you use them (for example "PM (Post Mount, Bremssattel-Aufnahme)", "TA (Thru Axle, Steckachse)", "UDH (Universal Derailleur Hanger)"), unless the user used the abbreviation themselves. Spare part codes like BT-DH-022 stay exactly as written.
 AUDIENCE: The user is Bombtrack staff, a distributor or a shop, never the end customer. Talk to them as a colleague in the trade: never tell them to "ask your dealer" or "buy at a shop". For ordering, say the part is available as an original Bombtrack spare part via Bombtrack or the distributor. (Customer-facing wording is only for the separate customer request drafts.)
-ORIGINAL AND UNIVERSAL PARTS: When the question is about replacement, upgrade or compatible parts:
-- FIRST ANSWER: start with "Original:" and name only the originally fitted part(s) with model names and Bombtrack codes from the data (Seido is Bombtrack's own component brand and counts as original; name a Seido product only when the data lists it). Add at most one short sentence that it is available as an original part via Bombtrack or the distributor. No universal standards, no third-party info yet; the app shows a button for that.
-- WHEN THE USER ASKS FOR UNIVERSAL FIT / MORE DETAIL: give "Universell:" (English "Universal:") with the standards from the data so any part made to them fits, as short bullets: brakes (mount PM 6" or Flat Mount, maximum rotor size front and rear, adapter needed), wheels (thru axle size and thread, 6-bolt or Centerlock rotor, freehub body HG / XD / Microspline, wheel size, max tyre width), BSA bottom brackets, headsets (S.H.I.S.), seatposts (diameter), tyres, SRAM UDH. Frame-specific parts (derailleur hangers other than UDH, frame small parts, dropouts, special axles) have no standard: say so; replacement hangers from specialist makers exist, check their compatibility list against the Bombtrack code. Never claim a specific third-party product fits unless the data says so.
+ORIGINAL AND UNIVERSAL PARTS: When the question is about replacement, upgrade or compatible parts, write the answer in exactly two parts:
+1) Start with "Original:" and name the originally fitted part(s) with model names and Bombtrack codes from the data (Seido is Bombtrack's own component brand and counts as original; name a Seido product only when the data lists it). At most one short sentence that it is available as an original part via Bombtrack or the distributor.
+2) Then a new line that is exactly "Universell:" in German or "Universal:" in English, followed by short bullets with the standards from the data so any part made to them fits: brakes (mount PM 6" or Flat Mount, maximum rotor size front and rear, adapter needed), wheels (thru axle size and thread, 6-bolt or Centerlock rotor, freehub body HG / XD / Microspline, wheel size, max tyre width), BSA bottom brackets, headsets (S.H.I.S.), seatposts (diameter), tyres, SRAM UDH. For frame-specific parts (derailleur hangers other than UDH, frame small parts, dropouts, special axles) write one bullet that there is no standard; replacement hangers from specialist makers exist, check their compatibility list against the Bombtrack code. Never claim a specific third-party product fits unless the data says so. The app folds the universal part behind a button, so the original part must stand on its own.
 ALTERNATIVES: When the requested model, size, wheel size or feature does not exist or does not fit (rider height outside the size range, size not offered, over the maximum rider weight, tyre or rotor too big, trailer or child seat not approved), say so clearly and name the closest Bombtrack alternative that does fit, in one sentence, with the reason (e.g. "XXL gibt es nicht; XL passt bis 1990 mm"). For recommendations, also name the obvious near-miss and why it is out if the customer would likely ask about it.
 COMPARISONS: When comparing models, name the differences that matter for the choice, checked in the data for each model: frame material, complete weight, maximum rider weight, drivetrain (1x/2x, mechanical/electronic), brakes, tyre clearance, front/rear rotor limits, trailer and child seat approval, dynamo/racks/fenders where relevant. Skip what is identical unless it matters. Keep it compact: short bullets or a small table only if asked. Name products by model name. Link a product only when it helps: [Name](https://bombtrack.com/${de?"de/":""}products/<handle>).
 
@@ -1468,6 +1472,9 @@ function fallbackContext(q){
   return "\n\nRELEVANT PRODUCT DATA:\n"+hit.map(p=>prodText(p,lang)).join("\n")+(docs.length?"\n\nRELEVANT DOCUMENT PAGES:\n"+docs.map(c=>`--- ${docLabel(c)}, page ${c.p} ---\n${c.t}`).join("\n\n"):"");
 }
 const ERR={credits:"The AI budget for this app is used up. Please tell your admin.",overloaded:"Claude is very busy right now. Please ask again in a moment.",not_granted:"Claude access wasn't allowed for this page, so chat is off.",sampling_disabled:"Claude isn't available for this account, so chat is off.",rate_limited:"Too many questions at once. Wait a moment, then ask again.",session_expired:"Your session expired. Sign in again.",prompt_too_large:"This chat got too long. Start a new chat.",refused:"Claude declined that question. Try rephrasing it."};
+const UNIV_RE=/\n\s*(?:\*\*)?\s*(Universell|Universal)\s*:?\s*(?:\*\*)?\s*:?/i;
+function mdAns(text){ const m=UNIV_RE.exec(text); if(!m) return md(text); const rest=text.slice(m.index+m[0].length).replace(/^\s*:?/,"");
+  return md(text.slice(0,m.index))+`<div class="univ" hidden><div class="univh">${esc(lang==="de"?"Universell":"Universal")}</div>${md(rest)}</div>`; }
 function splitMeta(text){
   const m=text.match(/<<\s*status:\s*(\w+)\s*;\s*products:\s*([^>]*)>>\s*$/i);
   const clean=text.replace(/<<[\s\S]*$/,"").trimEnd();
@@ -1486,12 +1493,12 @@ async function ask(q){
   let sys=rules(); if(!toolsOK) sys+=fallbackContext(q);
   const input=[{role:"user",content:sys},...history];
   ctl=new AbortController();
-  const opts={signal:ctl.signal,onText:({text})=>{ans.innerHTML=md(splitMeta(text).clean||"…"); scrollLog();}};
+  const opts={signal:ctl.signal,onText:({text})=>{ans.innerHTML=mdAns(splitMeta(text).clean||"…"); scrollLog();}};
   if(toolsOK) opts.tools=TOOLS(); else opts.cache=false;
   const t0=Date.now();
   try{
     const {text,truncated,modelTierApplied,usage}=await sample(input,opts);
-    const m=splitMeta(text); ans.innerHTML=md(m.clean);
+    const m=splitMeta(text); ans.innerHTML=mdAns(m.clean);
     const meta={status:m.status,products:[...new Set([...m.products.filter(h=>byH[h]),...acc.used])].slice(0,8)};
     chat.turns.push({role:"assistant",content:m.clean}); chat.meta.push(meta); chat.lang=lang;
     finishBot(d,m.clean,meta);

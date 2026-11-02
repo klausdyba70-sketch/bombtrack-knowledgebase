@@ -923,7 +923,7 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 
 <div class="shell" id="shell">
   <aside class="side" id="side">
-    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v a4ef4a4 · 02.11.2026 08:44</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
+    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v a45324c · 02.11.2026 10:51</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
     <button class="newchat" id="newChat">＋ <span data-t="newChat">New chat</span></button>
     <nav class="nav" id="nav"></nav>
     <div class="nav"><div class="grp" data-t="recent">Recent chats</div></div>
@@ -951,6 +951,8 @@ const PASS_HASH = "";
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const P = KB.products, G = KB.geometry;
+/* framesets share the complete bike's geometry: map handle to geometry key (e.g. bombtrack-hook-ext-ti-frameset -> HOOK-EXT-TI) */
+for(const p of P){ if(p.k==="frameset"&&!p.g){ const k=p.h.replace(/^bombtrack-/,"").replace(/-frame(set)?$/,"").toUpperCase().replace(/-PLUS/g,"-plus"); if(G[k]) p.g=k; } }
 const byH = Object.fromEntries(P.map(p => [p.h, p]));
 let lang = "en";
 try { lang = localStorage.getItem("bt_lang") || ((navigator.language||"en").slice(0,2)==="de" ? "de" : "en"); } catch { lang = (navigator.language||"en").slice(0,2)==="de" ? "de" : "en"; }

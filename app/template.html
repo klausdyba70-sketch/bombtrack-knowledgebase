@@ -1301,8 +1301,8 @@ async function saveChat(){
   try{ await db.collection("data/users/"+me).doc(chat.id).set({kind:"chat",title,ts:Date.now(),turns:chat.turns.slice(-30),meta:chat.meta.slice(-30)}); }catch{}
 }
 const SUGG = {
-  en:["Which bikes take a dynamo hub and lights?","Compare Beyond 1, Beyond 2 and Beyond AL Apex","Max tire clearance on the Hook EXT?","Which derailleur hanger fits the Arise?","Which bike for multi-day bikepacking with bags?","Which bike suits a rider of 1.60 m for gravel?"],
-  de:["Welche Bikes haben Nabendynamo und Licht?","Vergleiche Beyond 1, Beyond 2 und Beyond AL Apex","Maximale Reifenfreiheit beim Hook EXT?","Welches Schaltauge passt ans Arise?","Welches Bike für mehrtägiges Bikepacking mit Taschen?","Welches Gravel-Bike passt bei 1,60 m Körpergröße?"]
+  en:["Which bikes take a dynamo hub and lights?","Compare Beyond 1, Beyond 2 and Beyond AL Apex","Max tire clearance on the Hook EXT?","Which derailleur hanger fits the Arise?","Which bike for multi-day bikepacking with bags?","Which bike suits a rider of 1.60 m for gravel?","Can I fit different brakes on the Arise?","Which wheels fit the Arise?"],
+  de:["Welche Bikes haben Nabendynamo und Licht?","Vergleiche Beyond 1, Beyond 2 und Beyond AL Apex","Maximale Reifenfreiheit beim Hook EXT?","Welches Schaltauge passt ans Arise?","Welches Bike für mehrtägiges Bikepacking mit Taschen?","Welches Gravel-Bike passt bei 1,60 m Körpergröße?","Kann ich am Arise andere Bremsen fahren?","Welche Laufräder passen ins Arise?"]
 };
 function viewChat(v){
   v.style.padding="0";
@@ -1315,7 +1315,7 @@ function viewChat(v){
     <div class="status" id="status"></div></div></div>`;
   const col=$("#col");
   if(!chat.turns.length){
-    const pick=[...SUGG[lang]].sort(()=>Math.random()-.5).slice(0,3);
+    const pick=[...SUGG[lang].slice(-2),...SUGG[lang].slice(0,-2).sort(()=>Math.random()-.5).slice(0,2)];
     col.innerHTML=`<div class="hello"><h1>${esc(t("hello"))}</h1><p>${esc(t("helloSub"))}</p><div class="bub">${pick.map(s=>`<button type="button">${esc(s)}</button>`).join("")}</div></div>`;
     col.querySelector(".bub").onclick=e=>{const b=e.target.closest("button"); if(b) ask(b.textContent);};
     startTyper();

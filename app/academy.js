@@ -532,6 +532,7 @@ function viewStyleTest(v) {
       <div class="fb"><div class="card"><h3>${esc(t("good"))}</h3><ul>${(r.good || []).map(x => `<li>${esc(x)}</li>`).join("") || "<li>–</li>"}</ul></div><div class="card"><h3>${esc(t("missed"))}</h3><ul>${(r.missed || []).map(x => `<li>${esc(x)}</li>`).join("") || "<li>–</li>"}</ul></div></div>
       <div class="card" style="padding:14px 16px"><h3 style="font-size:15px;margin-bottom:6px">${tx("How you could say it", "So könntest du es sagen")}</h3><p style="margin:0">${esc(r.better || "")}</p></div>` : ""}
     <div class="chips"><button class="btn" id="rsAgain">${tx("New test", "Neuer Test")}</button><button class="back" id="rsBack">${tx("Back to Academy", "Zur Academy")}</button></div></div>`;
+  if (r && rs.resLang && rs.resLang !== lang && !rs.busy && sample) { rs.resLang = lang; rs.redo = true; setTimeout(() => $("#rsFb") && $("#rsFb").click(), 0); }
   $("#rsSt").onclick = e => { const b = e.target.closest("[data-c]"); if (b) { rs.style = b.dataset.c; rs.res = null; render(); } };
   $("#rsT").oninput = e => { rs.text = e.target.value; };
   $("#rsAgain").onclick = () => { rs = newStyleTest(); render(); };
@@ -548,7 +549,8 @@ EMPLOYEE'S EXPLANATION:
 ${rs.text}
 
 Reply with only JSON: {"score": integer 1-10, "summary": one sentence, "good": [1-3 short points], "missed": [1-3 short points with what was missing or wrong], "better": "a short, natural model explanation of 2-4 sentences"}`;
-    try { rs.res = await ai("styleExplain", prompt, { cache: false }, true); addXP(5 + (+rs.res.score || 0)); }
+    const redo = rs.redo; rs.redo = false;
+    try { rs.res = await ai("styleExplain", prompt, { cache: false }, true); rs.resLang = lang; if (!redo) addXP(5 + (+rs.res.score || 0)); }
     catch (e) { rs.res = { score: "–", summary: ERR[e.code] || tx("Feedback couldn't be created. Try again.", "Feedback konnte nicht erstellt werden. Bitte nochmal versuchen.") }; }
     rs.busy = false; if (route.v === "stylequiz") render();
   };

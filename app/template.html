@@ -146,6 +146,9 @@ a.btn,a.card{color:var(--ink)}
 .drop.over,.drop:hover{border-color:var(--ink);color:var(--ink)}
 .prog{height:6px;border-radius:3px;background:var(--panel);overflow:hidden}.prog i{display:block;height:100%;background:var(--ink);width:0;transition:width .2s}
 @media (max-width:700px){.upl .row2{grid-template-columns:minmax(0,1fr)}}
+.setxrow{display:none;justify-content:flex-end;margin-bottom:-6px}
+.setx{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+@media (max-width:900px){.setxrow{display:flex}}
 .iconbtn{border:0;background:var(--lime-soft);border-radius:10px;padding:6px 10px;cursor:pointer;display:none}
 .view{flex:1;min-height:0;overflow-y:auto;padding-block:44px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1080px;margin-inline:auto;display:flex;flex-direction:column;gap:22px}
@@ -926,7 +929,9 @@ function addCrumbs(v){
     else if(a==="quizhome"){ qz=null; go("quiz"); } else if(a==="practicehome"){ pr={sc:null,turns:[],fb:null,busy:false}; go("practice"); }
     else if(a.startsWith("year:")){ pf={...pf,year:a.slice(5),fam:null}; go("products"); } else go(a); };
 }
-function go(v, extra={}){ route={v,...extra}; $("#shell").classList.remove("open"); render(); $("#view").scrollTop=0; }
+function setLang(l){ if(l===lang) return; lang=l; try{localStorage.setItem("bt_lang",lang)}catch{} render(); }
+let backRoute=null;
+function go(v, extra={}){ const isA=x=>ADMIN.some(a=>a[0]===x); if(isA(v)&&!isA(route.v)) backRoute={...route}; route={v,...extra}; $("#shell").classList.remove("open"); render(); $("#view").scrollTop=0; }
 function renderNav(){
   const openN = OPEN.filter(o=>o.status!=="answered").length;
   $("#nav").innerHTML = NAV.filter(n=>!n.team||isTeam).map(n=> n.grp ? `<div class="grp">${esc(t(n.grp))}</div>` :
@@ -956,7 +961,7 @@ function viewAll(v){
   if(open) html+=`</div>`;
   v.innerHTML=html+`<div class="chips" style="margin-top:8px"><div class="seg" id="langSeg2"><button data-l="en" aria-pressed="${lang==="en"}">EN</button><button data-l="de" aria-pressed="${lang==="de"}">DE</button></div><div class="seg" id="themeSeg2"><button data-th="light" aria-pressed="${theme==="light"}">☀</button><button data-th="auto" aria-pressed="${theme==="auto"}">A</button><button data-th="dark" aria-pressed="${theme==="dark"}">☾</button></div></div></div>`;
   v.querySelectorAll(".hub").forEach(h=>h.onclick=e=>{const b=e.target.closest("[data-v]"); if(b) go(b.dataset.v);});
-  $("#langSeg2").onclick=e=>{const b=e.target.closest("[data-l]"); if(b){lang=b.dataset.l; try{localStorage.setItem("bt_lang",lang)}catch{} render();}};
+  $("#langSeg2").onclick=e=>{const b=e.target.closest("[data-l]"); if(b){setLang(b.dataset.l);}};
   $("#themeSeg2").onclick=e=>{const b=e.target.closest("[data-th]"); if(b){theme=b.dataset.th; try{localStorage.setItem("bt_theme",theme)}catch{} applyTheme(); render();}};
 }
 function renderHist(){
@@ -971,8 +976,9 @@ $("#botnav").onclick = e => { const b=e.target.closest("button[data-v]"); if(b){
 $("#menuBtn").onclick = () => $("#shell").classList.toggle("open");
 $("#sideClose").onclick = () => $("#shell").classList.remove("open");
 $("#scrim").onclick = () => $("#shell").classList.remove("open");
-$("#langSeg").onclick = e => { const b=e.target.closest("button[data-l]"); if(!b) return; lang=b.dataset.l; try{localStorage.setItem("bt_lang",lang)}catch{} render(); };
-$("#gearBtn").onclick=()=>go("settings");
+$("#langSeg").onclick = e => { const b=e.target.closest("button[data-l]"); if(!b) return; setLang(b.dataset.l); };
+function closeSettings(){ const b=backRoute&&!ADMIN.some(a=>a[0]===backRoute.v)?backRoute:{v:"chat"}; go(b.v,b); }
+$("#gearBtn").onclick=()=>ADMIN.some(a=>a[0]===route.v)?closeSettings():go("settings");
 let theme="auto"; try{ theme=localStorage.getItem("bt_theme")||"auto"; }catch{}
 function applyTheme(){ if(theme==="auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme",theme);
   document.querySelectorAll("#themeSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.th===theme)); }
@@ -988,6 +994,7 @@ function render(){
   (map[route.v]||viewChat)(v);
   addCrumbs(v);
   if(inBK(route.v)){ const w=v.querySelector(".wrap"); if(w){ w.insertAdjacentHTML("afterbegin",`<nav class="atabs">${BIKEKNOW.map(([r,k])=>`<button data-v="${r}" ${route.v===r?'aria-current="page"':""}>${esc(t(k))}</button>`).join("")}</nav>`); w.querySelector(".atabs").onclick=e=>{const b=e.target.closest("[data-v]"); if(b) go(b.dataset.v);}; } }
+  if(ADMIN.some(a=>a[0]===route.v)){ const w=v.querySelector(".wrap"); if(w){ w.insertAdjacentHTML("afterbegin",`<div class="setxrow"><button class="setx" id="setX">✕ ${esc(lang==="de"?"Schließen":"Close")}</button></div>`); $("#setX").onclick=closeSettings; } }
   if(isTeam&&ADMIN.some(a=>a[0]===route.v)){ const w=v.querySelector(".wrap"); if(w){ const oc=OPEN.filter(o=>o.status!=="answered").length; w.style.maxWidth="900px"; w.insertAdjacentHTML("afterbegin",`<nav class="atabs">${ADMIN.map(([r,k])=>`<button data-v="${r}" ${route.v===r?'aria-current="page"':""}>${esc(t(k))}${r==="open"&&oc?` <span class="badge" style="margin-left:4px">${oc}</span>`:""}</button>`).join("")}</nav>`); w.querySelector(".atabs").onclick=e=>{const b=e.target.closest("[data-v]"); if(b) go(b.dataset.v);}; } }
 }
 
@@ -1293,6 +1300,9 @@ const SUGG = {
 };
 function viewChat(v){
   v.style.padding="0";
+  let redoQ=null; const tl=chat.turns;
+  if(chat.lang&&chat.lang!==lang&&!busy&&tl.length>=2&&tl[tl.length-1].role==="assistant"&&tl[tl.length-2].role==="user"){ redoQ=tl[tl.length-2].content; tl.splice(-2); chat.meta.splice(-2); chat.lang=lang; }
+  if(redoQ) setTimeout(()=>{ if(route.v==="chat") ask(redoQ); },0);
   v.innerHTML = `<div class="chatview ${chat.turns.length?"":"start"}"><div class="chatlog" id="log"><div class="chatcol" id="col"></div></div>
     <div class="composer"><form id="cform"><textarea id="q" rows="1" placeholder="${esc(t("placeholder"))}"></textarea>
     <div class="row"><span class="note" id="modeNote"></span><span class="sp"></span><button type="button" class="stop" id="stop" hidden>${esc(t("stop"))}</button><button class="send" id="send" aria-label="${esc(t("ask"))}">↑</button></div></form>
@@ -1435,7 +1445,7 @@ async function ask(q){
     const {text,truncated,modelTierApplied,usage}=await sample(input,opts);
     const m=splitMeta(text); ans.innerHTML=md(m.clean);
     const meta={status:m.status,products:[...new Set([...m.products.filter(h=>byH[h]),...acc.used])].slice(0,8)};
-    chat.turns.push({role:"assistant",content:m.clean}); chat.meta.push(meta);
+    chat.turns.push({role:"assistant",content:m.clean}); chat.meta.push(meta); chat.lang=lang;
     finishBot(d,m.clean,meta);
     if(truncated) setStatus("Cut short. Ask for less at once.");
     const inChars=JSON.stringify(input).length*(toolsOK?2:1)+acc.tool, outChars=text.length;
@@ -1824,6 +1834,10 @@ const scenLvl=s=>s.lvl||SCEN_LVL[s.id]||2;
 function viewPractice(v){
   v.style.padding="";
   if(needProfile(v)) return;
+  if(pr.sc&&!pr.busy&&sample){
+    if(pr.fb&&pr.fbLang&&pr.fbLang!==lang){ pr.fbLang=lang; setTimeout(()=>feedback(true),0); }
+    else if(!pr.fb&&pr.lang&&pr.lang!==lang&&pr.turns.length&&pr.turns[pr.turns.length-1].role!=="user"){ pr.lang=lang; while(pr.turns.length&&pr.turns[pr.turns.length-1].role!=="user") pr.turns.pop(); setTimeout(customerTurn,0); }
+  }
   if(!pr.sc && ob.mode!=="conv"){ viewObjPitch(v); return; }
   if(!pr.sc){
     v.innerHTML=`<div class="wrap"><div class="vhead"><h1>${esc(t("prTitle"))}</h1><p>${esc(t("prSub"))}</p></div>${renderTrainTabs()}
@@ -1852,7 +1866,7 @@ function viewPractice(v){
   $("#pre").onclick=()=>{pr={sc:null,turns:[],fb:null,busy:false}; render();};
   if($("#pform")){ $("#pform").onsubmit=e=>{e.preventDefault(); const q=$("#pq").value.trim(); if(!q||pr.busy) return; pr.turns.push({role:"user",content:q}); customerTurn();};
     $("#pq").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#pform").requestSubmit();}});
-    $("#pfin").onclick=feedback; }
+    $("#pfin").onclick=()=>feedback(); }
   v.querySelector(".fb")?.addEventListener("click",e=>{const b=e.target.closest("[data-h]"); if(b) go("product",{h:b.dataset.h});});
 }
 async function customerTurn(){
@@ -1868,11 +1882,11 @@ async function customerTurn(){
   const input=[{role:"user",content:sys+factBlock}, ...talk.map(x=>({role:"user",content:(x.role==="assistant"?"(You, the customer, said:) ":"(Shop staff says:) ")+x.content})), {role:"user",content:"Your next line as the customer:"}];
   try{ const {text}=await ai("practiceCustomer",input,{modelTier:"quick",cache:false});
     const m=text.match(/<<\s*check:\s*([^>]*)>>/i); const clean=text.replace(/<<[\s\S]*?>>/g,"").trim();
-    pr.turns.push({role:"assistant",content:clean||"…"}); if(m&&m[1].trim()) pr.turns.push({role:"note",content:m[1].trim()}); }
+    pr.lang=lang; pr.turns.push({role:"assistant",content:clean||"…"}); if(m&&m[1].trim()) pr.turns.push({role:"note",content:m[1].trim()}); }
   catch(e){ pr.turns.push({role:"assistant",content:ERR[e.code]||"…"}); }
   pr.busy=false; if(route.v==="practice") render();
 }
-async function feedback(){
+async function feedback(redo){
   const s=pr.sc; pr.busy=true; render();
   const transcript=pr.turns.map(x=>(x.role==="note"?"FACT CHECK (staff said something wrong): ":x.role==="assistant"?"CUSTOMER: ":"STAFF: ")+x.content).join("\n");
   const ment=[...new Set([...mentioned(transcript),...searchProducts(s.en[1],"bike",4)])].slice(0,8);
@@ -1890,7 +1904,7 @@ Specs of relevant bikes:
 ${ment.map(p=>prodText(p,lang)).join("\n")}
 
 Reply with only JSON: {"score": integer 1-10, "summary": one sentence, "good": [2-4 short points], "missed": [2-4 short points, incl. facts or questions they missed, citing real spec values], "better_reply": one improved reply the staff could have given, "recommended": [up to 3 product handles that fit the customer]}`;
-  try{ pr.fb=await ai(s.kind==="obj"?"objection":"practiceFeedback",prompt,{cache:false},true); const sc=+pr.fb.score||0; if(LEARN){ const slot=s.kind==="obj"?LEARN.obj:LEARN.practice; slot.n++; slot.best=Math.max(slot.best,sc); addXP(10+sc+(scenLvl(s)-1)*5); } }catch(e){ pr.fb={score:"–",summary:ERR[e.code]||"Feedback couldn't be created. Try again.",good:[],missed:[],recommended:[]}; }
+  try{ pr.fb=await ai(s.kind==="obj"?"objection":"practiceFeedback",prompt,{cache:false},true); pr.fbLang=lang; const sc=+pr.fb.score||0; if(LEARN&&!redo){ const slot=s.kind==="obj"?LEARN.obj:LEARN.practice; slot.n++; slot.best=Math.max(slot.best,sc); addXP(10+sc+(scenLvl(s)-1)*5); } }catch(e){ pr.fb={score:"–",summary:ERR[e.code]||"Feedback couldn't be created. Try again.",good:[],missed:[],recommended:[]}; }
   pr.busy=false; if(route.v==="practice") render();
 }
 
@@ -2204,7 +2218,7 @@ function viewSettings(v){
     <h3 class="setgrp">${esc(t("setPersonal"))}</h3>${personal}
     ${isTeam?`<h3 class="setgrp">${esc(t("setApp"))}</h3><p class="note" style="margin:-6px 0 0">${esc(t("setSub"))}</p>${!db?`<div class="card empty">${esc(t("noSave"))}</div>`:""}
     ${row("price",t("setPrice"),t("setPriceSub"))}${row("stock",t("setStock"),t("setStockSub"))}<span class="note" id="setMsg"></span>`:""}</div>`;
-  $("#pLang").onclick=e=>{const b=e.target.closest("[data-x]"); if(b){ lang=b.dataset.x; try{localStorage.setItem("bt_lang",lang)}catch{} render(); }};
+  $("#pLang").onclick=e=>{const b=e.target.closest("[data-x]"); if(b){ setLang(b.dataset.x); }};
   $("#pTheme").onclick=e=>{const b=e.target.closest("[data-x]"); if(b){ theme=b.dataset.x; try{localStorage.setItem("bt_theme",theme)}catch{} applyTheme(); render(); }};
   if(!isTeam) return;
   ["price","stock"].forEach(k=>{ $("#set_"+k).onchange=async e=>{ const next={...SET,[k]:e.target.checked}; SET=next; try{ await db.doc("settings/app").set(next); $("#setMsg").textContent=t("saved"); }catch{ $("#setMsg").textContent=t("noSave"); } }; });

@@ -14,6 +14,7 @@ export default {
       if (url.pathname === "/login" && req.method === "POST") return login(req, env);
       if (url.pathname === "/logout") return new Response(null, { status: 302, headers: { location: "/", "set-cookie": cookie("", 0) } });
 
+      if (url.pathname === "/api/health") return health(env);
       const s = await session(req, env);
       if (!s) {
         if (url.pathname.startsWith("/api/")) return json({ code: "session_expired", message: "Not logged in" }, 401);
@@ -92,6 +93,31 @@ async function same(a, b, env) {
 }
 
 /* ---------------- Claude ---------------- */
+/* Public health check: is the Claude API reachable with this key? Tiny 1-token request, result cached 2 minutes. */
+async function health(env) {
+  const now = Date.now();
+  const row = await env.DB.prepare("SELECT data, updated FROM docs WHERE col='_health' AND id='claude'").first();
+  if (row && now - row.updated < 120000) return json({ ...JSON.parse(row.data), cached: true });
+  let out;
+  if (!env.ANTHROPIC_API_KEY) out = { claude: "no_key" };
+  else {
+    const t0 = Date.now();
+    try {
+      const r = await fetch((env.ANTHROPIC_BASE_URL || "https://api.anthropic.com") + "/v1/messages", {
+        method: "POST", headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+        body: JSON.stringify({ model: env.MODEL_DEFAULT || MODELS.default, max_tokens: 1, messages: [{ role: "user", content: "ping" }] })
+      });
+      const j = await r.json().catch(() => ({}));
+      const msg = j.error && j.error.message || "";
+      out = r.ok ? { claude: "ok", model: j.model, ms: Date.now() - t0 }
+        : { claude: /credit balance/i.test(msg) ? "credits" : r.status === 429 ? "rate_limited" : r.status === 529 ? "overloaded" : r.status === 401 ? "bad_key" : "error", status: r.status, message: msg.slice(0, 200) };
+    } catch (e) { out = { claude: "unreachable", message: String(e && e.message || e).slice(0, 200) }; }
+  }
+  out.checked = new Date(now).toISOString();
+  await env.DB.prepare("INSERT INTO docs(col,id,data,updated) VALUES('_health','claude',?1,?2) ON CONFLICT(col,id) DO UPDATE SET data=?1, updated=?2").bind(JSON.stringify(out), now).run();
+  return json(out);
+}
+
 async function chat(req, env, s) {
   if (!env.ANTHROPIC_API_KEY) return json({ code: "sampling_disabled", message: "No API key configured" }, 503);
   const b = await req.json();

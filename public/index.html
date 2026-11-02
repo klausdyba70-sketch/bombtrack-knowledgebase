@@ -426,8 +426,8 @@ a.btn,a.card{color:var(--ink)}
 .srcs{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 .srcs button{font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel);cursor:pointer;color:var(--muted)}
 .srcs button:hover{color:var(--ink);border-color:var(--ink)}
-.acts{display:flex;gap:6px;margin-top:6px;align-items:center}
-.acts button{border:1px solid transparent;background:transparent;border-radius:8px;padding:2px 7px;cursor:pointer;color:var(--muted);font-size:13px}
+.acts{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px;align-items:center}
+.acts button{border:1px solid transparent;background:transparent;border-radius:8px;padding:2px 7px;cursor:pointer;color:var(--muted);font-size:13px;white-space:nowrap}
 .acts button:hover{border-color:var(--line);color:var(--ink)}
 .acts .flag{font-size:12px;color:var(--warn)}
 .composer{padding-block:10px 14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:max(14px,env(safe-area-inset-bottom,0px))}
@@ -880,7 +880,11 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 .medal .ico svg{width:22px;height:22px}
 .medal.on{color:var(--lime-ink)}.medal.on .ico{background:var(--lime)}
 .bdg2.cert{background:var(--panel)}
-@media (max-width:900px){.amods2{grid-template-columns:minmax(0,1fr)}.badges2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.amods2{grid-template-columns:minmax(0,1fr);gap:8px}.amods2 button{flex-direction:row;align-items:center;gap:12px;padding:12px 14px}.amods2 .mtx{flex:1;min-width:0}.amods2 .go{font-size:0;gap:0;margin-top:0;padding:9px;flex:none}.amods2 .go svg{width:18px;height:18px}.badges2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.caseq{font-size:22px;line-height:1.35;font-weight:600;letter-spacing:0}
+@media (max-width:700px){.caseq{font-size:18px}}
+.sfmob{display:none;margin:0}
+@media (max-width:700px){.sfbetween{display:none}.sfmob{display:block}}
 /* chat error inside the answer */
 .answer .errnote{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;padding:12px 14px;border-radius:12px;background:#fbeceb;color:#8f2a20;font-size:15px}
 :root[data-theme="dark"] .answer .errnote{background:#3a2423;color:#f3b3ab}
@@ -935,7 +939,7 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 
 <div class="shell" id="shell">
   <aside class="side" id="side">
-    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v c475acd · 02.11.2026 21:24</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
+    <div class="brand"><span class="brandtxt"><b>BOMBTRACK</b><span class="ver" id="appVer">v 2359099 · 02.11.2026 21:53</span></span><button class="sideclose" id="sideClose" aria-label="Close menu">✕</button></div>
     <button class="newchat" id="newChat">＋ <span data-t="newChat">New chat</span></button>
     <nav class="nav" id="nav"></nav>
     <div class="nav"><div class="grp" data-t="recent">Recent chats</div></div>
@@ -1039,8 +1043,11 @@ function searchProducts(q, kind, n=12){
   return res.sort((a,b)=>b[0]-a[0]).slice(0,n).map(r=>r[1]);
 }
 function mentioned(text){
-  const tl=" "+text.toLowerCase()+" ";
-  return P.filter(p=>p.k==="bike"||p.k==="frameset").filter(p=>tl.includes(" "+p.t.toLowerCase().replace(/ frameset$| frame$/,"")+" ")||tl.includes(p.t.toLowerCase()));
+  // longest names first, and remove each match from the text, so "Arise Tour" doesn't also count as "Arise"
+  let tl=" "+text.toLowerCase()+" "; const out=[];
+  const list=P.filter(p=>(p.k==="bike"||p.k==="frameset")&&!isArch(p)).map(p=>[p,p.t.toLowerCase().replace(/ frameset$| frame$/,"")]).sort((a,b)=>b[1].length-a[1].length);
+  for(const [p,n] of list){ const hit=tl.includes(" "+n+" ")||tl.includes(" "+n+",")||tl.includes(" "+n+".")||tl.includes(" "+n+"?"); if(hit){ out.push(p); tl=tl.split(n).join(" "); } }
+  return out;
 }
 
 /* ---------------- documents ---------------- */
@@ -1177,8 +1184,8 @@ function renderNav(){
   document.querySelectorAll("#langSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l===lang));
 }
 const HUBDESC={
-  en:{compare:"Any number of products side by side",docs:"FAQ, owner's manual, spare parts reference",geometry:"Every frame drawn, each measurement explained",practice:"Claude plays a customer, you get a score",glossary:"TA, UDH, BSA and more in plain words",size:"Body height to the right size",gearing:"Lowest and highest gear compared",tires:"Which bikes take this tire?",spokes:"Spoke lengths for any wheel",open:"Questions the team still has to answer",academy:"Your path, badges and certificate",styles:"Gravel, Adventure, Mountain, Urban, Cyclocross",cases:"Customer question to reply draft",anatomy:"Tap a part, learn the word",range:"Where each bike sits, which share a frame",quiz:"10 questions from the real data",cards:"Photo in front, key facts on the back",stats:"Usage and the monthly report",settings:"Prices and availability on or off",chat:"Ask anything about Bombtrack",products:"All bikes, frames, parts and clothing"},
-  de:{cases:"Von der Kundenfrage zum Antwortentwurf",anatomy:"Teil antippen, Begriff lernen",compare:"Beliebig viele Produkte nebeneinander",docs:"FAQ, Bedienungsanleitung, Ersatzteil-Referenz",geometry:"Jeder Rahmen gezeichnet, jedes Maß erklärt",practice:"Claude spielt Kundschaft, du bekommst Punkte",glossary:"TA, UDH, BSA und mehr, einfach erklärt",size:"Körpergröße zur passenden Rahmengröße",gearing:"Leichtester und schwerster Gang im Vergleich",tires:"Welche Bikes passen zu diesem Reifen?",spokes:"Speichenlängen für jedes Laufrad",open:"Fragen, die das Team noch beantworten muss",academy:"Dein Lernpfad, Abzeichen und Zertifikat",styles:"Gravel, Adventure, Mountain, Urban, Cyclocross",range:"Wo jedes Bike steht, wer sich einen Rahmen teilt",quiz:"10 Fragen aus den echten Daten",cards:"Vorne Foto, hinten die wichtigsten Fakten",stats:"Nutzung und Monatsbericht",settings:"Preise und Lieferbarkeit an oder aus",chat:"Frag alles zu Bombtrack",products:"Alle Bikes, Rahmen, Teile und Bekleidung"}};
+  en:{compare:"Any number of products side by side",docs:"FAQ, owner's manual, spare parts reference",geometry:"Every frame drawn, each measurement explained",practice:"Claude plays a customer, you get a score",glossary:"TA, UDH, BSA and more in plain words",size:"Body height to the right size",gearing:"Lowest and highest gear compared",tires:"Which bikes take this tire?",spokes:"Spoke lengths for any wheel",open:"Questions the team still has to answer",academy:"Your path, badges and certificate",styles:"Gravel, Adventure, Mountain, Urban, Cyclocross",cases:"Customer question to reply draft",anatomy:"Tap a part, learn the word",range:"Where each bike sits, which share a frame",quiz:"10 questions from the real data",stylequiz:"Multiple choice plus one style in your own words",cards:"Photo in front, key facts on the back",stats:"Usage and the monthly report",settings:"Prices and availability on or off",chat:"Ask anything about Bombtrack",products:"All bikes, frames, parts and clothing"},
+  de:{cases:"Von der Kundenfrage zum Antwortentwurf",anatomy:"Teil antippen, Begriff lernen",compare:"Beliebig viele Produkte nebeneinander",docs:"FAQ, Bedienungsanleitung, Ersatzteil-Referenz",geometry:"Jeder Rahmen gezeichnet, jedes Maß erklärt",practice:"Claude spielt Kundschaft, du bekommst Punkte",glossary:"TA, UDH, BSA und mehr, einfach erklärt",size:"Körpergröße zur passenden Rahmengröße",gearing:"Leichtester und schwerster Gang im Vergleich",tires:"Welche Bikes passen zu diesem Reifen?",spokes:"Speichenlängen für jedes Laufrad",open:"Fragen, die das Team noch beantworten muss",academy:"Dein Lernpfad, Abzeichen und Zertifikat",styles:"Gravel, Adventure, Mountain, Urban, Cyclocross",range:"Wo jedes Bike steht, wer sich einen Rahmen teilt",quiz:"10 Fragen aus den echten Daten",stylequiz:"Multiple Choice und ein Fahrstil in eigenen Worten",cards:"Vorne Foto, hinten die wichtigsten Fakten",stats:"Nutzung und Monatsbericht",settings:"Preise und Lieferbarkeit an oder aus",chat:"Frag alles zu Bombtrack",products:"Alle Bikes, Rahmen, Teile und Bekleidung"}};
 function renderBot(){
   const items=[["chat","✦","navChat"],["products","▦","products"],["compare","⇆","compare"],["all","☷","allF"]];
   const cur=route.v==="product"?"products":(["chat","products","compare"].includes(route.v)?route.v:"all");
@@ -1235,15 +1242,16 @@ function render(){
   if(draft&&$("#q")&&!$("#q").value){ $("#q").value=draft; }
   addCrumbs(v);
   if(inBK(route.v)){ const w=v.querySelector(".wrap"); if(w){ w.insertAdjacentHTML("afterbegin",`<nav class="atabs">${BIKEKNOW.map(([r,k])=>`<button data-v="${r}" ${route.v===r?'aria-current="page"':""}>${esc(t(k))}</button>`).join("")}</nav>`); w.querySelector(".atabs").onclick=e=>{const b=e.target.closest("[data-v]"); if(b) go(b.dataset.v);}; } }
-  if(ADMIN.some(a=>a[0]===route.v)){ const w=v.querySelector(".wrap"); if(w){ w.insertAdjacentHTML("afterbegin",`<div class="setxrow"><button class="setx" id="setX">✕ ${esc(lang==="de"?"Schließen":"Close")}</button></div>`); $("#setX").onclick=closeSettings; } }
   if(isTeam&&ADMIN.some(a=>a[0]===route.v)){ const w=v.querySelector(".wrap"); if(w){ const oc=OPEN.filter(o=>o.status!=="answered").length; w.style.maxWidth="900px"; w.insertAdjacentHTML("afterbegin",`<nav class="atabs">${ADMIN.map(([r,k])=>`<button data-v="${r}" ${route.v===r?'aria-current="page"':""}>${esc(t(k))}${r==="open"&&oc?` <span class="badge" style="margin-left:4px">${oc}</span>`:""}</button>`).join("")}</nav>`); w.querySelector(".atabs").onclick=e=>{const b=e.target.closest("[data-v]"); if(b) go(b.dataset.v);}; } }
+  if(ADMIN.some(a=>a[0]===route.v)){ const w=v.querySelector(".wrap"); if(w){ w.insertAdjacentHTML("afterbegin",`<div class="setxrow"><button class="setx" id="setX">✕ ${esc(lang==="de"?"Schließen":"Close")}</button></div>`); $("#setX").onclick=closeSettings; } }
 }
 
 /* ---------------- markdown ---------------- */
 function md(src){
   const lines=esc(src).split("\n"); let out="",i=0;
   const inl=s=>s.replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/(^|[^*])\*([^*\n]+)\*/g,"$1<em>$2</em>")
-    .replace(/\[([^\]]+)\]\((https:\/\/bombtrack\.com[^)\s]*)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    .replace(/\[([^\]]+)\]\((https:\/\/bombtrack\.com[^)\s]*)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\[([^\]]+)\]\((?!https:\/\/bombtrack\.com)[^)\s]*\)/g,'$1');  // any other link target: keep only the label
   while(i<lines.length){
     const l=lines[i];
     if(/^\s*\|.*\|\s*$/.test(l)&&i+1<lines.length&&/^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i+1])&&lines[i+1].includes("-")){
@@ -1487,7 +1495,7 @@ async function prepCase(c) {
 }
 function viewCase(v, c) {
   const a = c.ai || {};
-  v.innerHTML = `<div class="wrap" style="max-width:860px"><button class="back" id="cBack">← ${tx("All requests", "Alle Anfragen")}</button>${c.archived ? `<div class="card tipbox"><p>${tx("This case is archived.", "Dieser Fall ist archiviert.")}</p></div>` : ""}<div class="vhead"><h1 style="font-size:28px">${esc(c.q)}</h1><p>${esc(caseCat(c.cat))}${c.t ? " · " + esc(c.t) : ""}${c.year ? " · MY " + esc(c.year) : ""} · ${new Date(c.ts).toLocaleString(lang === "de" ? "de-DE" : "en-GB")}</p></div>
+  v.innerHTML = `<div class="wrap" style="max-width:860px"><button class="back" id="cBack">← ${tx("All requests", "Alle Anfragen")}</button>${c.archived ? `<div class="card tipbox"><p>${tx("This case is archived.", "Dieser Fall ist archiviert.")}</p></div>` : ""}<div class="vhead"><h1 class="caseq">${esc(c.q)}</h1><p>${esc(caseCat(c.cat))}${c.t ? " · " + esc(c.t) : ""}${c.year ? " · MY " + esc(c.year) : ""} · ${new Date(c.ts).toLocaleString(lang === "de" ? "de-DE" : "en-GB")}</p></div>
     ${cs.busy ? `<div class="card empty">${tx("Preparing the answer from Bombtrack's data…", "Antwort wird aus Bombtracks Daten vorbereitet…")}</div>` : `
     ${a.summary ? `<div class="card tipbox"><span class="note">${tx("What the customer needs", "Was die Kundschaft braucht")}</span><p>${esc(a.summary)}</p></div>` : ""}
     <div class="lgrid more"><div class="card" style="padding:14px 16px"><span class="note">${tx("Solution options", "Lösungsvorschläge")}</span><ul class="cul">${(a.suggestions || []).map(s => `<li>${esc(s)}</li>`).join("") || "<li>–</li>"}</ul></div>
@@ -1550,7 +1558,7 @@ function viewChat(v){
   v.style.padding="0";
   let redoQ=null; const tl=chat.turns;
   if(chat.lang&&chat.lang!==lang&&!busy&&tl.length>=2&&tl[tl.length-1].role==="assistant"&&tl[tl.length-2].role==="user"){ redoQ=tl[tl.length-2].content; tl.splice(-2); chat.meta.splice(-2); chat.lang=lang; }
-  if(redoQ) setTimeout(()=>{ if(route.v==="chat") ask(redoQ); },0);
+  if(redoQ) setTimeout(()=>{ if(route.v==="chat"){ forceLang=lang; try{ ask(redoQ); } finally { forceLang=null; } } },0);
   v.innerHTML = `<div class="chatview ${chat.turns.length?"":"start"}"><div class="chatlog" id="log"><div class="chatcol" id="col"></div></div>
     <div class="composer"><form id="cform"><textarea id="q" rows="1" placeholder="${esc(t("placeholder"))}"></textarea>
     <div class="row"><span class="note" id="modeNote"></span><span class="sp"></span><button type="button" class="stop" id="stop" hidden>${esc(t("stop"))}</button><button class="send" id="send" aria-label="${esc(t("ask"))}">↑</button></div></form>
@@ -1640,9 +1648,10 @@ function teamKnowledge(){
   const done=TEAM.slice(0,80); if(!done.length) return "";
   return "\n\nTEAM ANSWERS (approved by the Bombtrack team, treat as authoritative and newer than the website data):\n"+done.map(x=>`Q: ${x.q}\nA: ${x.a}`).join("\n\n");
 }
+let forceLang=null;
 function rules(){
   const de = lang==="de";
-  return `You are "Bombtrack Knowledge & Advice", the internal product assistant for Bombtrack Bicycle Co. Users are Bombtrack staff, distributors and bike shop owners.
+  return (forceLang?`REPLY LANGUAGE (overrides the language rule below): write this reply in ${forceLang==="de"?"German":"English"}, whatever language the question is in.\n\n`:"")+`You are "Bombtrack Knowledge & Advice", the internal product assistant for Bombtrack Bicycle Co. Users are Bombtrack staff, distributors and bike shop owners.
 
 SCOPE: Answer only questions about Bombtrack products (bikes, framesets, spare parts, accessories, clothing), their specs, compatibility, sizing, geometry, and general cycling knowledge needed to sell or service them (riding styles, standards, fitting). For anything else (general chat, coding, writing unrelated texts, other brands' products unless comparing standards) reply in one polite sentence that you only help with Bombtrack products, and set status offtopic.
 
@@ -2170,7 +2179,7 @@ async function customerTurn(){
   const sys=`Role-play for sales training. You are a CUSTOMER in a bike shop, not an assistant. Situation: ${s.en[1]} Personality: ${tone.p} Speak ${lang==="de"?"German, casual and natural":"English, casual and natural"}. Keep each reply to 1-3 short sentences. Reveal details only when asked (body height, budget, use, luggage). Ask realistic questions and react to the advice you get. Never give advice yourself and never mention you are an AI. ${pr.turns.length?"Continue the conversation."+(s.kind==="obj"?" Only let go of your objection when the staff member gives specific, convincing arguments with real facts; otherwise push back or raise a related doubt.":""):opening}`;
   // Facts the customer may know (looked up online), so clearly wrong claims by the staff get challenged.
   const talk=pr.turns.filter(x=>x.role!=="note"), lastStaff=[...talk].reverse().find(x=>x.role==="user");
-  const facts=[...new Set([...(s.h&&byH[s.h]?[byH[s.h]]:[]),...mentioned((lastStaff?lastStaff.content:"")+" "+talk.map(x=>x.content).join(" ")+" "+s.en[1])])].slice(0,4);
+  const facts=[...new Set([...mentioned(lastStaff?lastStaff.content:""),...(s.h&&byH[s.h]?[byH[s.h]]:[]),...mentioned(talk.map(x=>x.content).join(" ")+" "+s.en[1])])].slice(0,4);
   const lvl=scenLvl(s), react=lvl===1?"politely wonder about it and ask whether that is right":lvl===2?"ask back and say what you read instead":"challenge it directly and firmly, you clearly read something else";
   const factBlock=facts.length&&lastStaff?`\n\nFACTS you looked up online before coming in (Bombtrack's own data):\n${facts.map(p=>prodText(p,"en").slice(0,2500)).join("\n")}\n\nIf the staff member's LAST message states something that clearly contradicts these facts or is unrealistic for a bike (for example a complete bike weighing 5 kg, a feature it does not have, a wrong size range, a tyre that does not fit), ${react}. In that case, and only then, add one final line exactly like <<check: one short sentence in ${lang==="de"?"German":"English"} with the correct value from the facts>>. Never add that line otherwise.`:"";
   const input=[{role:"user",content:sys+factBlock}, ...talk.map(x=>({role:"user",content:(x.role==="assistant"?"(You, the customer, said:) ":"(Shop staff says:) ")+x.content})), {role:"user",content:"Your next line as the customer:"}];
@@ -2810,11 +2819,11 @@ function viewSize(v){
     const cells=fit.map(f=>{ const v=p.v.find(x=>x[0]===f.s); const so=g.rows.STANDOVER?num(g.rows.STANDOVER[f.i]):NaN; const cl=Number.isFinite(ins)?ins*10-so:NaN;
       return `<div><b class="mono">${esc(f.s)}</b> <span class="note">${!SET.stock?"":v?(v[2]?t("available"):t("sold")):(lang==="de"?"nicht im Shop":"not in shop")}</span>
         <div class="note mono">Stack ${esc(g.rows.STACK?.[f.i]??"–")} · Reach ${esc(g.rows.REACH?.[f.i]??"–")}${Number.isFinite(cl)?` · ${lang==="de"?"Überstand":"Standover"} <span style="color:${cl<25?"var(--warn)":"inherit"}">${cl>0?"+":""}${Math.round(cl)} mm</span>`:""}</div></div>`; }).join("");
-    return `<tr><td><button class="back" style="color:var(--ink);font-weight:600" data-h="${esc(p.h)}">${esc(p.t)}</button><div class="note">${esc(p.cat)}</div></td><td>${cells||`<span class="note">${lang==="de"?"Keine passende Größe":"No size in range"}</span>`}</td><td class="note">${fit.length>1?(lang==="de"?"Zwischen zwei Größen: kleiner fährt sich wendiger und aufrechter, größer gestreckter und laufruhiger.":"Between sizes: the smaller one rides more agile and upright, the larger more stretched and stable."):""}</td></tr>`; }).join("");
+    return `<tr><td><button class="back" style="color:var(--ink);font-weight:600;text-align:left" data-h="${esc(p.h)}">${esc(p.t)}</button><div class="note">${esc(p.cat)}</div></td><td>${cells||`<span class="note">${lang==="de"?"Keine passende Größe":"No size in range"}</span>`}</td><td class="note sfbetween">${fit.length>1?(lang==="de"?"Zwischen zwei Größen: kleiner fährt sich wendiger und aufrechter, größer gestreckter und laufruhiger.":"Between sizes: the smaller one rides more agile and upright, the larger more stretched and stable."):""}</td></tr>`; }).join("");
   v.innerHTML=`<div class="wrap"><div class="vhead"><h1>${esc(t("sizeTitle"))}</h1><p>${esc(t("sizeSub"))}</p></div>
     <div class="card form" style="grid-template-columns:repeat(3,minmax(0,1fr))"><label>${esc(t("height"))}<input id="sf_h" type="number" inputmode="numeric" value="${sf.h}"></label><label>${esc(t("inseam"))}<input id="sf_i" type="number" inputmode="numeric" placeholder="${lang==="de"?"optional":"optional"}" value="${esc(sf.inseam)}"></label>
       <label>${esc(t("category"))}<select id="sf_c">${cats.map(c=>`<option ${c===sf.cat?"selected":""} value="${esc(c)}">${esc(c==="All"?t("all"):c)}</option>`).join("")}</select></label></div>
-    <div class="card ctable"><table style="table-layout:auto"><thead><tr><th>${esc(t("bike"))}</th><th>${esc(t("sizeL"))}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note sfmob">${lang==="de"?"Zwei Größen: kleiner fährt sich wendiger und aufrechter, größer gestreckter und laufruhiger.":"Two sizes: the smaller one rides more agile and upright, the larger more stretched and stable."}</p><div class="card ctable"><table style="table-layout:auto"><thead><tr><th>${esc(t("bike"))}</th><th>${esc(t("sizeL"))}</th><th class="sfbetween"></th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="note">${esc(t("sizeNote"))}</p></div>`;
   $("#sf_h").onchange=e=>{const x=parseFloat(e.target.value); if(x>100&&x<230){sf.h=x; render();}};
   $("#sf_i").onchange=e=>{sf.inseam=e.target.value; render();};
@@ -3005,8 +3014,8 @@ function viewStats(v){
   if(!isTeam){ go("chat"); return; }
   const ALL=QLOG, Q=ALL.filter(isChatQ), n=Q.length, ans=Q.filter(q=>q.status==="answered").length;
   const total=ALL.reduce((a,q)=>a+costOf(q),0);
-  const TN={chat:tx("Chat questions","Chat-Fragen"),case:tx("Customer requests (reply draft)","Kundenanfragen (Antwortentwurf)"),practiceCustomer:tx("Counter practice: customer role","Verkaufstraining: Kundenrolle"),practiceFeedback:tx("Counter practice: feedback","Verkaufstraining: Feedback"),pitch:tx("Academy: pitch feedback","Academy: Pitch-Feedback"),objection:tx("Academy: objection feedback","Academy: Einwand-Feedback"),report:tx("Monthly report","Monatsbericht")};
-  const TW={chat:tx("Product data, documents, tools","Produktdaten, Dokumente, Tools"),case:tx("Draft + category, as JSON","Entwurf + Kategorie, als JSON"),practiceCustomer:tx("Short role-play lines, speed matters","Kurze Rollenspiel-Sätze, Tempo zählt"),practiceFeedback:tx("Score and coaching, as JSON","Bewertung und Coaching, als JSON"),pitch:tx("Score and tips, as JSON","Bewertung und Tipps, als JSON"),objection:tx("Score and tips, as JSON","Bewertung und Tipps, als JSON"),report:tx("One-page summary of the month","Einseitige Monatsübersicht")};
+  const TN={chat:tx("Chat questions","Chat-Fragen"),case:tx("Customer requests (reply draft)","Kundenanfragen (Antwortentwurf)"),practiceCustomer:tx("Counter practice: customer role","Verkaufstraining: Kundenrolle"),practiceFeedback:tx("Counter practice: feedback","Verkaufstraining: Feedback"),styleExplain:tx("Riding styles test: feedback","Fahrstil-Test: Feedback"),pitch:tx("Academy: pitch feedback","Academy: Pitch-Feedback"),objection:tx("Academy: objection feedback","Academy: Einwand-Feedback"),report:tx("Monthly report","Monatsbericht")};
+  const TW={chat:tx("Product data, documents, tools","Produktdaten, Dokumente, Tools"),case:tx("Draft + category, as JSON","Entwurf + Kategorie, als JSON"),practiceCustomer:tx("Short role-play lines, speed matters","Kurze Rollenspiel-Sätze, Tempo zählt"),styleExplain:tx("Own-words explanation graded, as JSON","Eigene Erklärung bewertet, als JSON"),practiceFeedback:tx("Score and coaching, as JSON","Bewertung und Coaching, als JSON"),pitch:tx("Score and tips, as JSON","Bewertung und Tipps, als JSON"),objection:tx("Score and tips, as JSON","Bewertung und Tipps, als JSON"),report:tx("One-page summary of the month","Einseitige Monatsübersicht")};
   const byT={}; ALL.forEach(q=>{ const k=q.task||"chat", tr=q.tier||"default", key=k+"|"+tr; const o=byT[key]=byT[key]||{k,tr,n:0,c:0,ms:0}; o.n++; o.c+=costOf(q); o.ms+=q.ms||0; });
   Object.keys(TN).forEach(k=>{ if(!Object.values(byT).some(o=>o.k===k)){ const tr=k==="practiceCustomer"?"quick":"default"; byT[k+"|"+tr]={k,tr,n:0,c:0,ms:0}; } });
   const TROWS=Object.values(byT).sort((a,b)=>b.c-a.c||b.n-a.n);

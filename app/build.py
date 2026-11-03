@@ -16,6 +16,8 @@ def version():
     return f"v {h} · {t}"
 VERSION = os.environ.get("APP_VERSION") or version()
 
+sys.path.insert(0, A("app")); import checks
+checks.run(read("app/kb.json"))
 kb = read("app/kb.json").replace("</", "<\\/")
 body = (read("app/template.html")
         .replace("/*__ACADEMY__*/", read("app/academy.js"))

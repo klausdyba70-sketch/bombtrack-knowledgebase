@@ -664,6 +664,7 @@ svg .lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
 @media (max-width:700px){.caseq{font-size:18px}}
 .sfmob{display:none;margin:0}
 @media (max-width:700px){.sfbetween{display:none}.sfmob{display:block}}
+.spinfo{padding:12px 16px}.spinfo summary{cursor:pointer;font-weight:600}.spinfo ul{margin:8px 0;padding-left:18px}.spinfo li{margin:4px 0}.spinfo p{margin:8px 0}
 /* chat error inside the answer */
 .answer .errnote{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;padding:12px 14px;border-radius:12px;background:#fbeceb;color:#8f2a20;font-size:15px}
 :root[data-theme="dark"] .answer .errnote{background:#3a2423;color:#f3b3ab}
@@ -2128,14 +2129,15 @@ function viewTires(v){
 /* ---- spoke calculator (general) ---- */
 const nums = s => (String(s).replace(/,/g,".").match(/\d+(?:\.\d+)?/g)||[]).map(Number);
 function wheelsOf(p){ const w=(p.en&&p.en.x&&p.en.x.Wheels)||{}; const o={}; for(const k in w) o[k.replace(/[\s|]+/g," ").replace("flangedistance","flange distance")]=w[k]; return o; }
-function groupsOf(s){ return String(s||"").split("|").map(part=>{ const m=part.trim().match(/^([A-Z]{1,3}(?:\s*-\s*[A-Z]{1,3})?)?\s*(.*)$/); return {lab:(m[1]||"").replace(/\s/g,""), v:nums(m[2])}; }).filter(g=>g.v.length); }
+// size groups like "XS - S 570 mm | M - XL 604 mm" (also with " / " between groups); "S - S" counts as "S"
+function groupsOf(s){ return String(s||"").split(/\s*\|\s*|\s+\/\s+(?=[A-Z]{1,3}\b)/).map(part=>{ const m=part.trim().match(/^([A-Z]{1,3}(?:\s*-\s*[A-Z]{1,3})?)?\s*(.*)$/); let lab=(m[1]||"").replace(/\s/g,""); const ab=lab.split("-"); if(ab.length===2&&ab[0]===ab[1]) lab=ab[0]; return {lab, v:nums(m[2])}; }).filter(g=>g.v.length); }
 const SPK_BIKES = P.filter(p=>p.k==="bike"&&wheelsOf(p).ERD);
 let sp={h:"", end:"rear", gi:null, erd:604, n:32, xL:3, xR:3, pcdL:58, pcdR:58, dL:34.3, dR:16.7, cc:51, off:8.8, ocr:0, hole:2.4, pub:[]};
 function spokeLen(erd,pcd,d,n,x,hole){ const a=(720*x/n)*Math.PI/180, r1=erd/2, r2=pcd/2; return Math.sqrt(d*d+r1*r1+r2*r2-2*r1*r2*Math.cos(a))-hole/2; }
 function spPrefill(){
   const p=byH[sp.h]; if(!p) return; const w=wheelsOf(p); const E=sp.end==="front";
   const erdG=groupsOf(w.ERD); if(sp.gi==null||sp.gi>=erdG.length) sp.gi=erdG.length>1?erdG.length-1:0;
-  const g=erdG[sp.gi]; sp.erd=g?g.v[0]:sp.erd;
+  const g=erdG[sp.gi]; sp.erd=g?((erdG.length===1&&!g.lab&&g.v.length===2)?(E?g.v[0]:g.v[1]):g.v[0]):sp.erd;  // "380 mm / 563 mm" = front / rear (e.g. Munroe Cargo)
   const cnt=nums(w["Spoke count (front / rear)"]||"32 / 32"); sp.n=(E?cnt[0]:cnt[1]||cnt[0])||32; sp.xL=sp.xR=sp.n<=24?2:3; sp.ocr=0;
   const pcd=nums(w[(E?"Front":"Rear")+" hub PCD"]||"58"); sp.pcdL=sp.pcdR=pcd[0]||58;
   const fl=nums(w[(E?"Front":"Rear")+" hub flange distance / offset"]||"");
@@ -2162,11 +2164,13 @@ function viewSpokes(v){
   const side=(lab,val,pub,d)=>`<div class="side"><span class="note">${esc(lab)}</span><span class="big">${f(val)}<small> mm</small></span><span class="note">${esc(t("order"))}: <b class="mono">${Number.isFinite(val)?Math.ceil(val-0.5):"–"} mm</b> · ${esc(t("bracing"))} ${ang(d,val)}</span>${pub!=null?`<span class="pub">${esc(t("btPub"))}: <b>${pub} mm</b> ${Math.abs(pub-val)<=1.5?"✓":`(${(pub-val>0?"+":"")+(pub-val).toFixed(1)})`}</span>`:""}</div>`;
   const inp=(k,lab,step="0.1")=>`<label>${esc(lab)}<input type="number" inputmode="decimal" step="${step}" id="sp_${k}" value="${sp[k]}"></label>`;
   const xsel=k=>`<select id="sp_${k}">${[0,1,2,3,4].map(x=>`<option value="${x}" ${x===sp[k]?"selected":""}>${x?x+"x":t("radial")}</option>`).join("")}</select>`;
-  v.innerHTML=`<div class="wrap"><div class="vhead"><h1>${esc(t("spTitle"))}</h1><p>${esc(t("spSub"))}</p></div>
+  v.innerHTML=`<div class="wrap"><div class="vhead"><h1>${esc(t("spTitle"))}</h1><p>${esc(t("spSub"))}</p></div><details class="card spinfo"><summary>${lang==="de"?"Wofür ist der Speichenrechner?":"What is the spoke calculator for?"}</summary><div>${lang==="de"
+?`<p>Für Werkstatt und Service: die richtige Speichenlänge, wenn an einem Bombtrack-Laufrad Speichen ersetzt oder ein Laufrad neu eingespeicht wird.</p><ul><li><b>Vorlage wählen:</b> Bike, Vorder- oder Hinterrad und Größengruppe. ERD, Nabenmaße und Speichenzahl kommen aus Bombtracks eigenen Daten.</li><li><b>Bombtrack-Angabe hat Vorrang:</b> Wo Bombtrack eine Speichenlänge veröffentlicht, steht sie neben dem berechneten Wert. Bestelle dann diese Länge.</li><li><b>Eigene Werte:</b> Für andere Felgen oder Naben die Maße selbst eintragen, zum Beispiel aus dem Datenblatt des Herstellers.</li></ul><p class="note">Die Vorlagen aktualisieren sich automatisch, wenn die Produktdaten neu abgeglichen werden (Website, Kataloge, neue Modelljahre und Größen). Bei jedem Abgleich prüft ein Test alle Vorlagen und meldet Laufräder, bei denen Daten fehlen oder Berechnung und Bombtrack-Angabe deutlich abweichen.</p>`
+:`<p>For workshop and service: the right spoke length when spokes on a Bombtrack wheel are replaced or a wheel is rebuilt.</p><ul><li><b>Pick a preset:</b> bike, front or rear wheel and size group. ERD, hub measurements and spoke count come from Bombtrack's own data.</li><li><b>Bombtrack's length comes first:</b> where Bombtrack publishes a spoke length, it is shown next to the calculated one. Order that length.</li><li><b>Custom values:</b> for other rims or hubs, enter the measurements yourself, for example from the maker's spec sheet.</li></ul><p class="note">Presets update automatically when the product data is synced again (website, catalogs, new model years and sizes). Every sync runs a check over all presets and lists wheels with missing data or a clear gap between calculation and Bombtrack's length.</p>`}</div></details>
   <div class="spk"><div class="card"><div class="form">
       <label class="full">${esc(t("preset"))}<select id="sp_bike"><option value="">${esc(t("custom"))}</option>${SPK_BIKES.map(b=>`<option value="${esc(b.h)}" ${b.h===sp.h?"selected":""}>Bombtrack ${esc(b.t)}</option>`).join("")}</select></label>
       ${p?`<label>${esc(t("wheel"))}<select id="sp_end"><option value="front" ${sp.end==="front"?"selected":""}>${esc(t("front"))}</option><option value="rear" ${sp.end==="rear"?"selected":""}>${esc(t("rear"))}</option></select></label>
-      <label>${esc(t("rimSize"))}<select id="sp_gi">${erdG.map((g,i)=>`<option value="${i}" ${i===sp.gi?"selected":""}>${esc(g.lab||"–")} · ERD ${g.v[0]}</option>`).join("")}</select></label>`:""}
+      <label>${esc(t("rimSize"))}<select id="sp_gi">${erdG.map((g,i)=>`<option value="${i}" ${i===sp.gi?"selected":""}>${esc(g.lab||(lang==="de"?"Alle Größen":"All sizes"))} · ERD ${(erdG.length===1&&!g.lab&&g.v.length===2)?(sp.end==="front"?g.v[0]:g.v[1]):g.v[0]}</option>`).join("")}</select></label>`:""}
       <div class="full note" style="font-weight:600;letter-spacing:.08em;text-transform:uppercase">${lang==="de"?"Felge":"Rim"}</div>
       ${inp("erd",t("erd"))}${inp("ocr",t("ocr"))}
       <div class="full note" style="font-weight:600;letter-spacing:.08em;text-transform:uppercase">${lang==="de"?"Nabe":"Hub"}</div>

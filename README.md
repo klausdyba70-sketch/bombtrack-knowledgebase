@@ -69,3 +69,12 @@ The client creates its own Cloudflare account, Claude Console organisation and A
 - Changing `TEAM_PASSWORD` or `ADMIN_PASSWORD` logs out everyone with that role; changing `SESSION_SECRET` logs out everyone.
 - Admin-only data (settings, team answers, uploads) is enforced on the server, not just hidden in the UI.
 - Pages are marked noindex and cannot be embedded in other sites.
+
+## Updating product data (sync)
+
+When the website data, catalogs or a new model year are synced into `app/kb.json`, everything in the app that is built from the data updates on the next build: products, compare, geometry, size finder, tyre check, chat and the **spoke calculator** presets.
+
+The spoke calculator is a workshop tool: the right spoke length for replacing spokes or rebuilding a Bombtrack wheel. Its presets come from each bike's `Wheels` data (ERD per size group, spoke count, hub PCD, flange distance / offset, Bombtrack's published spoke lengths). New bikes, sizes and wheel groups appear automatically.
+
+`python3 app/build.py` runs `app/checks.py` first. It recalculates every spoke preset and prints warnings for wheels with missing data, size groups without a published length, or more than 3 mm between calculation and Bombtrack's length. Read these after every sync. Known open points (Nov 2026): Beyond 1 / 2 / SUS front XS-S and Munroe Cargo front (20") differ by 3 to 5 mm from Bombtrack's published lengths, probably an ERD value to confirm with Bombtrack.
+
